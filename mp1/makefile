@@ -1,6 +1,6 @@
 GCC_OPTIONS = -m32 -nostdlib -fno-builtin -nostartfiles -nodefaultlibs -fno-exceptions -fno-rtti -fno-stack-protector -fleading-underscore -fno-asynchronous-unwind-tables
 
-all: kernel.bin
+all: kernel
 
 clean:
 	rm -f *.o *.bin
@@ -28,4 +28,7 @@ kernel.o: kernel.C
 
 kernel.bin: start.o kernel.o console.o utils.o linker.ld
 	ld -melf_i386 -T linker.ld -o kernel.bin start.o kernel.o console.o utils.o
+
+kernel: start.o kernel.o console.o utils.o linker.ld
+	ld -melf_i386 -T linker.ld -o kernel start.o kernel.o console.o utils.o
 
