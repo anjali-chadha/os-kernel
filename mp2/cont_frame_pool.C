@@ -132,16 +132,31 @@ ContFramePool::ContFramePool(unsigned long _base_frame_no,
                              unsigned long _info_frame_no,
                              unsigned long _n_info_frames)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
     base_frame_no = _base_frame_no;
     nframes = _n_frames;
     nFreeFrames = _n_frames;
     info_frame_no = _info_frame_no;
     nInfoFrames = _n_info_frames;
 
-    // Number of frames must be "fill" the bitmap!
-    assert ((nframes % 8 ) == 0);
+    if(info_frame_no == 0) {
+        bitmap = (unsigned char *) (base_frame_no * FRAME_SIZE);
+    } else {
+        bitmap = (unsigned char *) (info_frame_no * FRAME_SIZE);
+    }
 
+    // Number of frames must be "fill" the bitmap!
+    assert ((nframes % 4 ) == 0);
+
+    // Everything ok. Proceed to mark all bits in the bitmap
+    for(int i=0; i*4 < _n_frames; i++) {
+        bitmap[i] = 0xFF;
+    }
+
+    // Mark the first frame as being used if it is being used
+    if(_info_frame_no == 0) {
+	//TODO: Set number of frames as allocated
+        nFreeFrames =- nInfoFrames;
+    }
     Console::puts("Contiguous Frame Pool initialized\n");
 }
 
@@ -172,6 +187,11 @@ void ContFramePool::release_frames(unsigned long _first_frame_no)
 
 unsigned long ContFramePool::needed_info_frames(unsigned long _n_frames)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
-    assert(false);
+    unsigned long infoFramesCount = _n_frames / (FRAMES_PER_BYTE * FRAME_SIZE);
+    
+    //Rounding up the number of info frames if _n_frames is not a multiple of 2^14
+    if(_n_frames % (FRAMES_PER_BYTE * FRAME_SIZE) != 0) {
+	infoFramesCount += 1;
+     }
+    return infoFramesCount;
 }
