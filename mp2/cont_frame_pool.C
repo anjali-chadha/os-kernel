@@ -146,7 +146,7 @@ ContFramePool::ContFramePool(unsigned long _base_frame_no,
         bitmap = (unsigned char *) (info_frame_no * FRAME_SIZE);
     }
 
-    // Number of frames must be "fill" the bitmap!
+    // Number of frames must "fill" the bitmap!
     assert ((nframes % 4 ) == 0);
    
     //Creating a singly linked list of all the contiguous frame pools.
@@ -213,12 +213,13 @@ unsigned long ContFramePool::get_frames(unsigned int _n_frames)
 unsigned long ContFramePool::allocate_frames(unsigned long head_of_sequence_frame, unsigned int no_of_frames) {
 
      assert(head_of_sequence_frame >= base_frame_no);
-     assert(head_of_sequence_frame + no_of_frames <= base_frame_no + nframes);
+     assert(head_of_sequence_frame + no_of_frames < base_frame_no + nframes);
 
      unsigned long current_frame = head_of_sequence_frame;
-     set_frame_status( current_frame, HEAD_OF_SEQUENCE);
+     set_frame_status(current_frame++, HEAD_OF_SEQUENCE);
      while(no_of_frames-- > 1) {
-	 set_frame_status( current_frame, ALLOCATED);
+	 set_frame_status(current_frame++, ALLOCATED);
+	 nFreeFrames--;     
      } 
      return head_of_sequence_frame;
 }
@@ -231,7 +232,43 @@ void ContFramePool::mark_inaccessible(unsigned long _base_frame_no,
 
 void ContFramePool::release_frames(unsigned long _first_frame_no)
 {
-    
+    //look for frame pool where "frame_no" resides
+    ContFramePool* pool = find_owner_frame_pool(_first_frame_no);
+    assert(pool != NULL);
+    pool->deallocate_frames(_first_frame_no);
+}
+
+ContFramePool* ContFramePool::find_owner_frame_pool(unsigned long frame_no)
+{
+     assert(frame_pools_head != NULL);
+
+     ContFramePool* currentPool = frame_pools_head;
+
+     while(currentPool != NULL) {
+	unsigned current_pool_base_frame_no = currentPool->base_frame_no;
+	unsigned current_pool_last_frame_no = current_pool_base_frame_no + currentPool->nframes;
+	if(frame_no >= current_pool_base_frame_no && frame_no < current_pool_last_frame_no) {
+	    return currentPool;	
+	}	
+        currentPool = currentPool->nextPool;
+     }
+     //This will be an error scenario when we are not able to find any frame pool containing the given frame_no.
+     return NULL;
+}
+
+void ContFramePool::deallocate_frames(unsigned long first_frame) 
+{
+     assert(first_frame >= base_frame_no);
+     assert(first_frame < base_frame_no + nframes);
+
+     unsigned long current_frame = first_frame;
+     
+     //Go through all the frames until we find a frame with status FREE
+     while(get_frame_status(current_frame) != FREE 
+	     && current_frame < (base_frame_no + nframes)) {
+	 set_frame_status(current_frame++, FREE);
+   	 nFreeFrames++;
+     } 
 }
 
 unsigned long ContFramePool::needed_info_frames(unsigned long _n_frames)

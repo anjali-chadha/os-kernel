@@ -56,7 +56,10 @@ private:
 
     static ContFramePool* frame_pools_head;
 
+    //TODO- Add documentation describing each new method
     unsigned long allocate_frames(unsigned long head_of_sequence_frame, unsigned int no_of_frames);
+    void deallocate_frames(unsigned long first_frame); 
+    static ContFramePool* find_owner_frame_pool(unsigned long _first_frame_no);
     void set_frame_status(unsigned long frame_no, char status);
     unsigned char get_frame_status(unsigned long frame_no);
 public:
