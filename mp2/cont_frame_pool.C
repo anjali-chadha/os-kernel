@@ -196,6 +196,7 @@ unsigned long ContFramePool::get_frames(unsigned int _n_frames)
     
     //If the program reaches till this point, that means
     // number of contiguous frames required were unavailable
+    Console::puts("This operation cannot be fulfilled! Inadequate number of free frames available!");
     return 0;
 }
 
@@ -215,15 +216,8 @@ unsigned long ContFramePool::allocate_frames(unsigned long head_of_sequence_fram
 void ContFramePool::mark_inaccessible(unsigned long _base_frame_no,
                                       unsigned long _n_frames)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
-    assert(false);
+     allocate_frames(_base_frame_no, _n_frames);
 }
-
-void ContFramePool::mark_inaccessible(unsigned long _frame_no)
-{
-
-}
-
 
 void ContFramePool::release_frames(unsigned long _first_frame_no)
 {
@@ -246,6 +240,7 @@ unsigned char ContFramePool::get_frame_status(unsigned long frame_number)
 {
     //Check if the frame_number lies within a valid range
     assert(frame_number >= base_frame_no && frame_number < base_frame_no + nframes);
+    //TODO
     
 }
 
@@ -255,8 +250,6 @@ void ContFramePool::set_frame_status(unsigned long frame_number, char status)
     assert(frame_number >= base_frame_no && frame_number < base_frame_no + nframes);
     //Check if the input status is valid
     assert(status == ALLOCATED || status == FREE || status == HEAD_OF_SEQUENCE)
-    
-
-
+    //TODO:
 }
 
