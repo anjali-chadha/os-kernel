@@ -79,7 +79,6 @@ void SimpleFramePool::mark_inaccessible(unsigned long _base_frame_no,
     for(i = _base_frame_no; i < _base_frame_no + _nframes; i++){
         mark_inaccessible(i);
     }
-    nFreeFrames -= _nframes;
 }
 
 void SimpleFramePool::mark_inaccessible(unsigned long _frame_no)
