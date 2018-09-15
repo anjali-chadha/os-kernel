@@ -155,15 +155,61 @@ ContFramePool::ContFramePool(unsigned long _base_frame_no,
     // Mark the first frame as being used if it is being used
     if(_info_frame_no == 0) {
 	//TODO: Set number of frames as allocated
-        nFreeFrames =- nInfoFrames;
+        nFreeFrames -= nInfoFrames;
     }
     Console::puts("Contiguous Frame Pool initialized\n");
 }
 
 unsigned long ContFramePool::get_frames(unsigned int _n_frames)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
-    assert(false);
+    // Any frames left to allocate?
+    assert(nFreeFrames >= _n_frames);
+
+    unsigned int frame_no = base_frame_no;
+    unsigned int total_frames = 0;
+    unsigned long first_free_frame = 0x00;
+    unsigned long current_frame = base_frame_no;
+    
+    while(total_frames > 0) {
+        
+        //Get the status of current frame
+	char status = get_frame_status(current_frame);
+	
+        //If the frame is HEAD_OF_SEQUENCE, look further 
+        //for consecutive (n-1) free frames 
+        if(status == HEAD_OF_SEQUENCE) {
+            first_free_frame = current_frame;
+            current_frame++; 
+            total_frames--;
+            for(int i = 1; i < _n_frames; i++) {
+		total_frames--;
+            	if(get_frame_status(current_frame++) != FREE) {
+		   break;
+		}
+	    }    
+            return allocate_frames(first_free_frame, _n_frames);
+         } else {
+	   current_frame++;
+           total_frames--;
+         }  
+    }
+    
+    //If the program reaches till this point, that means
+    // number of contiguous frames required were unavailable
+    return 0;
+}
+
+unsigned long ContFramePool::allocate_frames(unsigned long head_of_sequence_frame, unsigned int no_of_frames) {
+
+     assert(head_of_sequence_frame >= base_frame_no);
+     assert(head_of_sequence_frame + no_of_frames <= base_frame_no + nframes);
+
+     unsigned long current_frame = head_of_sequence_frame;
+     set_frame_status( current_frame, HEAD_OF_SEQUENCE);
+     while(no_of_frames-- > 1) {
+	 set_frame_status( current_frame, ALLOCATED);
+     } 
+     return head_of_sequence_frame;
 }
 
 void ContFramePool::mark_inaccessible(unsigned long _base_frame_no,
@@ -195,3 +241,22 @@ unsigned long ContFramePool::needed_info_frames(unsigned long _n_frames)
      }
     return infoFramesCount;
 }
+
+unsigned char ContFramePool::get_frame_status(unsigned long frame_number)
+{
+    //Check if the frame_number lies within a valid range
+    assert(frame_number >= base_frame_no && frame_number < base_frame_no + nframes);
+    
+}
+
+void ContFramePool::set_frame_status(unsigned long frame_number, char status) 
+{
+    //Check if the frame_number lies within a valid range
+    assert(frame_number >= base_frame_no && frame_number < base_frame_no + nframes);
+    //Check if the input status is valid
+    assert(status == ALLOCATED || status == FREE || status == HEAD_OF_SEQUENCE)
+    
+
+
+}
+
