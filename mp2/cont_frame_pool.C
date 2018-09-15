@@ -127,6 +127,8 @@
 /* METHODS FOR CLASS   C o n t F r a m e P o o l */
 /*--------------------------------------------------------------------------*/
 
+ContFramePool* ContFramePool::frame_pools_head;
+
 ContFramePool::ContFramePool(unsigned long _base_frame_no,
                              unsigned long _n_frames,
                              unsigned long _info_frame_no,
@@ -146,6 +148,14 @@ ContFramePool::ContFramePool(unsigned long _base_frame_no,
 
     // Number of frames must be "fill" the bitmap!
     assert ((nframes % 4 ) == 0);
+   
+    //Creating a singly linked list of all the contiguous frame pools.
+    //A new frame pool is always added to the front of the linked list.
+    if(ContFramePool::frame_pools_head != NULL) {
+	nextPool = ContFramePool::frame_pools_head;
+     }
+     ContFramePool::frame_pools_head = this;	
+    
 
     // Everything ok. Proceed to mark all bits in the bitmap
     for(int i=0; i*4 < _n_frames; i++) {
@@ -221,15 +231,14 @@ void ContFramePool::mark_inaccessible(unsigned long _base_frame_no,
 
 void ContFramePool::release_frames(unsigned long _first_frame_no)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
-    assert(false);
+    
 }
 
 unsigned long ContFramePool::needed_info_frames(unsigned long _n_frames)
 {
     unsigned long infoFramesCount = _n_frames / (FRAMES_PER_BYTE * FRAME_SIZE);
     
-    //Rounding up the number of info frames if _n_frames is not a multiple of 2^14
+    //Rounding up the number of info frames
     if(_n_frames % (FRAMES_PER_BYTE * FRAME_SIZE) != 0) {
 	infoFramesCount += 1;
      }

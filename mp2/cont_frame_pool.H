@@ -52,7 +52,10 @@ private:
     unsigned long   nframes;       // Size of the frame pool
     unsigned long   info_frame_no; // Where do we store the management information?
     unsigned int    nInfoFrames;
-    
+    ContFramePool* nextPool;
+
+    static ContFramePool* frame_pools_head;
+
     unsigned long allocate_frames(unsigned long head_of_sequence_frame, unsigned int no_of_frames);
     void set_frame_status(unsigned long frame_no, char status);
     unsigned char get_frame_status(unsigned long frame_no);
