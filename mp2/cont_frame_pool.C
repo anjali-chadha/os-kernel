@@ -1,8 +1,8 @@
 /*
  File: ContFramePool.C
  
- Author:
- Date  : 
+ Author: Anjali Chadha
+ Date  : 09/11/2018
  
  */
 
@@ -133,7 +133,16 @@ ContFramePool::ContFramePool(unsigned long _base_frame_no,
                              unsigned long _n_info_frames)
 {
     // TODO: IMPLEMENTATION NEEEDED!
-    assert(false);
+    base_frame_no = _base_frame_no;
+    nframes = _n_frames;
+    nFreeFrames = _n_frames;
+    info_frame_no = _info_frame_no;
+    nInfoFrames = _n_info_frames;
+
+    // Number of frames must be "fill" the bitmap!
+    assert ((nframes % 8 ) == 0);
+
+    Console::puts("Contiguous Frame Pool initialized\n");
 }
 
 unsigned long ContFramePool::get_frames(unsigned int _n_frames)
@@ -148,6 +157,12 @@ void ContFramePool::mark_inaccessible(unsigned long _base_frame_no,
     // TODO: IMPLEMENTATION NEEEDED!
     assert(false);
 }
+
+void ContFramePool::mark_inaccessible(unsigned long _frame_no)
+{
+
+}
+
 
 void ContFramePool::release_frames(unsigned long _first_frame_no)
 {
