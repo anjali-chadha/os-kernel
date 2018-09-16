@@ -228,6 +228,7 @@ unsigned long ContFramePool::allocate_frames(unsigned long head_of_sequence_fram
      nFreeFrames--;
      while(no_of_frames-- > 1) {
 	 set_frame_status(current_frame++, ALLOCATED);
+         assert(get_frame_status(current_frame-1) == ALLOCATED);
 	 nFreeFrames--;     
      } 
    
