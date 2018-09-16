@@ -2,6 +2,9 @@ dev_kernel_grub.img
 kernel.bin
 bochsout.txt
 
+#Swap copies 
+*~
+
 # Mac
 .DS_Store
 __MACOSX
