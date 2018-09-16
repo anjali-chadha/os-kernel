@@ -53,12 +53,34 @@ private:
 
     static ContFramePool* frame_pools_head;
 
-    //TODO- Add documentation describing each new method
+    /*
+	Given a starting frame and number of frames, this method will 
+	set the status of the frame as HEAD_OF_SEQUENCE and all the subsequent
+	n-1 frames' status to ALLOCATED
+    */
     unsigned long allocate_frames(unsigned long head_of_sequence_frame, unsigned int no_of_frames);
+
+    /*
+	Starting from first_frame, it traverses all the frames and set their status
+	as FREE until it finds a frame which is HEAD_OF_SEQUENCE.
+    */
     void deallocate_frames(unsigned long first_frame); 
+    
+    /*
+	Static method which goes through a linked list of frame_pools
+	and returns the reference to pool which contains the input frame no.
+    */
     static ContFramePool* find_owner_frame_pool(unsigned long _first_frame_no);
+
+    /*
+	Sets the status of frame in bitmap.
+        In the current implementation, every frame uses 2 bits to store the status
+    */
     void set_frame_status(unsigned long frame_no, int status);
+
+    //Gets the status of frame in bitmap.
     unsigned int get_frame_status(unsigned long frame_no);
+
 public:
 
     // The frame size is the same as the page size, duh...    
