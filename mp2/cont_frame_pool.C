@@ -264,6 +264,7 @@ ContFramePool* ContFramePool::find_owner_frame_pool(unsigned long frame_no)
         currentPool = currentPool->nextPool;
      }
      //This will be an error scenario when we are not able to find any frame pool containing the given frame_no.
+     Console::puts("Error scenario! We are not able to find any frame pool containing the given frame_no. Please recheck your implementation");
      return NULL;
 }
 
