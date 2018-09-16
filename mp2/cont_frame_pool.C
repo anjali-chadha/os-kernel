@@ -322,3 +322,21 @@ void ContFramePool::set_frame_status(unsigned long frame_number, int status)
     bitmap[bitmap_frame_idx] |= (status << offset);
 }
 
+ContFramePool::~ContFramePool()
+{
+    assert(frame_pools_head != NULL);
+
+    //Find this object in pool_list and remove from it
+     ContFramePool* currentPool = frame_pools_head;
+
+     while(currentPool != NULL && currentPool->nextPool != NULL) {
+       if(currentPool->nextPool == this) {
+	   currentPool->nextPool = this->nextPool;
+	   break;
+	}
+     }
+     //If it reaches this point, that implies the frame pool was not found in the list, and something is wrong with implementation
+     Console::puts("Couldn't find the current frame pool in the frame pool list. Please recheck your implementations");
+}
+
+

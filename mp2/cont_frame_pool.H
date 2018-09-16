@@ -153,5 +153,8 @@ public:
      Other implementations need a different number of info frames.
      The exact number is computed in this function..
      */
+
+   ~ContFramePool();
+    //Destructor for ContFramePool
 };
 #endif
