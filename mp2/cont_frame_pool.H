@@ -18,10 +18,7 @@
 
 /*--------------------------------------------------------------------------*/
 /* DEFINES */
-#define HEAD_OF_SEQUENCE 00
-#define ALLOCATED 01
-#define FREE 11
-#define FRAMES_PER_BYTE 4
+
 /*--------------------------------------------------------------------------*/
 
 /* -- (none) -- */
@@ -60,8 +57,8 @@ private:
     unsigned long allocate_frames(unsigned long head_of_sequence_frame, unsigned int no_of_frames);
     void deallocate_frames(unsigned long first_frame); 
     static ContFramePool* find_owner_frame_pool(unsigned long _first_frame_no);
-    void set_frame_status(unsigned long frame_no, char status);
-    unsigned char get_frame_status(unsigned long frame_no);
+    void set_frame_status(unsigned long frame_no, int status);
+    unsigned int get_frame_status(unsigned long frame_no);
 public:
 
     // The frame size is the same as the page size, duh...    

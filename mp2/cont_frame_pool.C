@@ -113,6 +113,15 @@
 
 /*--------------------------------------------------------------------------*/
 /* CONSTANTS */
+ContFramePool* ContFramePool::frame_pools_head;
+
+static const int HEAD_OF_SEQUENCE = 1; //01b
+static const int ALLOCATED = 2; //10b
+static const int FREE = 3; //11b
+static const int FRAMES_PER_BYTE = 4;
+static const int ALL_BITS_SET_MASK = 3; // 11 is binary rep for 3
+static const int BITS_PER_BYTE = 8;
+static const int BITS_PER_FRAME = 2;
 /*--------------------------------------------------------------------------*/
 
 /* -- (none) -- */
@@ -126,8 +135,6 @@
 /*--------------------------------------------------------------------------*/
 /* METHODS FOR CLASS   C o n t F r a m e P o o l */
 /*--------------------------------------------------------------------------*/
-
-ContFramePool* ContFramePool::frame_pools_head;
 
 ContFramePool::ContFramePool(unsigned long _base_frame_no,
                              unsigned long _n_frames,
@@ -156,16 +163,17 @@ ContFramePool::ContFramePool(unsigned long _base_frame_no,
      }
      ContFramePool::frame_pools_head = this;	
     
-
     // Everything ok. Proceed to mark all bits in the bitmap
     for(int i=0; i*4 < _n_frames; i++) {
         bitmap[i] = 0xFF;
     }
-
+    
     // Mark the first frame as being used if it is being used
     if(_info_frame_no == 0) {
-	//TODO: Set number of frames as allocated
-        nFreeFrames -= nInfoFrames;
+        nInfoFrames = ContFramePool::needed_info_frames(_n_frames);
+	mark_inaccessible(base_frame_no, nInfoFrames);
+    } else {
+	mark_inaccessible(base_frame_no, nInfoFrames);
     }
     Console::puts("Contiguous Frame Pool initialized\n");
 }
@@ -174,20 +182,20 @@ unsigned long ContFramePool::get_frames(unsigned int _n_frames)
 {
     // Any frames left to allocate?
     assert(nFreeFrames >= _n_frames);
-
+   
     unsigned int frame_no = base_frame_no;
-    unsigned int total_frames = 0;
+    unsigned int total_frames = nframes;
     unsigned long first_free_frame = 0x00;
     unsigned long current_frame = base_frame_no;
-    
-    while(total_frames > 0) {
-        
+
+    while(total_frames > 0) { 
         //Get the status of current frame
-	char status = get_frame_status(current_frame);
-	
-        //If the frame is HEAD_OF_SEQUENCE, look further 
+	int status = get_frame_status(current_frame);
+     
+        //If the frame is FREE, look further 
         //for consecutive (n-1) free frames 
-        if(status == HEAD_OF_SEQUENCE) {
+        if(status == FREE) {
+
             first_free_frame = current_frame;
             current_frame++; 
             total_frames--;
@@ -211,17 +219,19 @@ unsigned long ContFramePool::get_frames(unsigned int _n_frames)
 }
 
 unsigned long ContFramePool::allocate_frames(unsigned long head_of_sequence_frame, unsigned int no_of_frames) {
-
+	
      assert(head_of_sequence_frame >= base_frame_no);
      assert(head_of_sequence_frame + no_of_frames < base_frame_no + nframes);
 
      unsigned long current_frame = head_of_sequence_frame;
      set_frame_status(current_frame++, HEAD_OF_SEQUENCE);
+     nFreeFrames--;
      while(no_of_frames-- > 1) {
 	 set_frame_status(current_frame++, ALLOCATED);
 	 nFreeFrames--;     
      } 
-     return head_of_sequence_frame;
+   
+   return head_of_sequence_frame;
 }
 
 void ContFramePool::mark_inaccessible(unsigned long _base_frame_no,
@@ -282,20 +292,34 @@ unsigned long ContFramePool::needed_info_frames(unsigned long _n_frames)
     return infoFramesCount;
 }
 
-unsigned char ContFramePool::get_frame_status(unsigned long frame_number)
+unsigned int ContFramePool::get_frame_status(unsigned long frame_number)
 {
     //Check if the frame_number lies within a valid range
-    assert(frame_number >= base_frame_no && frame_number < base_frame_no + nframes);
-    //TODO
-    
+    assert(frame_number >= base_frame_no);
+    assert(frame_number < base_frame_no + nframes);
+    unsigned int frame_idx = frame_number - base_frame_no; //0 based index
+    unsigned int bitmap_frame_idx = frame_idx/4;
+    unsigned int frame_bit_location = 2 * (frame_idx%4);
+    int offset = BITS_PER_BYTE - BITS_PER_FRAME - frame_bit_location;
+    return (bitmap[bitmap_frame_idx] >> offset) & ALL_BITS_SET_MASK;
 }
 
-void ContFramePool::set_frame_status(unsigned long frame_number, char status) 
+void ContFramePool::set_frame_status(unsigned long frame_number, int status) 
 {
     //Check if the frame_number lies within a valid range
     assert(frame_number >= base_frame_no && frame_number < base_frame_no + nframes);
     //Check if the input status is valid
     assert(status == ALLOCATED || status == FREE || status == HEAD_OF_SEQUENCE)
-    //TODO:
+    
+    unsigned int frame_idx = frame_number - base_frame_no; //0 based index
+    unsigned int bitmap_frame_idx = frame_idx/4;
+    unsigned int frame_bit_location = 2 * (frame_idx%4);
+    int offset = BITS_PER_BYTE - BITS_PER_FRAME - frame_bit_location;
+    
+    //Clear 2 bits specific to the frame_number
+    bitmap[bitmap_frame_idx] &= ~(ALL_BITS_SET_MASK << offset);
+    
+    //Set the specifix bits to the input status
+    bitmap[bitmap_frame_idx] |= (status << offset);
 }
 
