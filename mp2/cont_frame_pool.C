@@ -173,7 +173,7 @@ ContFramePool::ContFramePool(unsigned long _base_frame_no,
         nInfoFrames = ContFramePool::needed_info_frames(_n_frames);
 	mark_inaccessible(base_frame_no, nInfoFrames);
     } else {
-	mark_inaccessible(base_frame_no, nInfoFrames);
+	mark_inaccessible(_info_frame_no, nInfoFrames);
     }
     Console::puts("Contiguous Frame Pool initialized\n");
 }
@@ -185,7 +185,7 @@ unsigned long ContFramePool::get_frames(unsigned int _n_frames)
    
     unsigned int frame_no = base_frame_no;
     unsigned int total_frames = nframes;
-    unsigned long first_free_frame = 0x00;
+    unsigned long first_free_frame = base_frame_no;
     unsigned long current_frame = base_frame_no;
 
     while(total_frames > 0) { 
@@ -204,7 +204,10 @@ unsigned long ContFramePool::get_frames(unsigned int _n_frames)
             	if(get_frame_status(current_frame++) != FREE) {
 		   break;
 		}
-	    }    
+	    }   
+	      assert(first_free_frame >= base_frame_no);
+     	      assert(first_free_frame + _n_frames < base_frame_no + nframes);
+ 
             return allocate_frames(first_free_frame, _n_frames);
          } else {
 	   current_frame++;
@@ -220,9 +223,6 @@ unsigned long ContFramePool::get_frames(unsigned int _n_frames)
 
 unsigned long ContFramePool::allocate_frames(unsigned long head_of_sequence_frame, unsigned int no_of_frames) {
 	
-     assert(head_of_sequence_frame >= base_frame_no);
-     assert(head_of_sequence_frame + no_of_frames < base_frame_no + nframes);
-
      unsigned long current_frame = head_of_sequence_frame;
      set_frame_status(current_frame++, HEAD_OF_SEQUENCE);
      nFreeFrames--;
@@ -273,6 +273,10 @@ void ContFramePool::deallocate_frames(unsigned long first_frame)
 
      unsigned long current_frame = first_frame;
      
+     //Checks whether the first frame's status is head_of_sequence or not.
+     //If that's not the case, it will throw the error implying there is something wrong in the implementation.
+     assert(get_frame_status(current_frame) == HEAD_OF_SEQUENCE);
+
      //Go through all the frames until we find a frame with status FREE
      while(get_frame_status(current_frame) != FREE 
 	     && current_frame < (base_frame_no + nframes)) {
@@ -294,9 +298,6 @@ unsigned long ContFramePool::needed_info_frames(unsigned long _n_frames)
 
 unsigned int ContFramePool::get_frame_status(unsigned long frame_number)
 {
-    //Check if the frame_number lies within a valid range
-    assert(frame_number >= base_frame_no);
-    assert(frame_number < base_frame_no + nframes);
     unsigned int frame_idx = frame_number - base_frame_no; //0 based index
     unsigned int bitmap_frame_idx = frame_idx/4;
     unsigned int frame_bit_location = 2 * (frame_idx%4);
@@ -306,8 +307,6 @@ unsigned int ContFramePool::get_frame_status(unsigned long frame_number)
 
 void ContFramePool::set_frame_status(unsigned long frame_number, int status) 
 {
-    //Check if the frame_number lies within a valid range
-    assert(frame_number >= base_frame_no && frame_number < base_frame_no + nframes);
     //Check if the input status is valid
     assert(status == ALLOCATED || status == FREE || status == HEAD_OF_SEQUENCE)
     
