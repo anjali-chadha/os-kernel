@@ -96,7 +96,13 @@ int main() {
     test_memory(&kernel_mem_pool, 32);
 
     /* ---- Add code here to test the frame pool implementation. */
-    
+    test_memory(&process_mem_pool, 32);
+    test_memory(&process_mem_pool, 64);
+    test_memory(&process_mem_pool, 128);
+    //test_memory(&process_mem_pool, 256);
+    //test_memory(&process_mem_pool, 1024); //The bochs emulator starts behaving weirdly
+
+     test_memory(&process_mem_pool, 35);
     /* -- NOW LOOP FOREVER */
     Console::puts("Testing is DONE. We will do nothing forever\n");
     Console::puts("Feel free to turn off the machine now.\n");
