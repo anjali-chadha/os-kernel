@@ -74,7 +74,47 @@ void PageTable::enable_paging()
 
 void PageTable::handle_fault(REGS * _r)
 {
-  assert(false);
+   unsigned int err_code = _r->err_code;
+   //If the last bit is not equal to 0, then we can ignore this exception, as it didn't occur due
+   //to the missing page
+   if((err_code & 1) == 1) {
+      Console::puts("Page Fault Exception due to Protection Fault\n");
+      return;
+   }
+
+  unsigned long page_fault_address = read_cr2();
+  unsigned long * page_directory = current_page_table -> page_directory;
+
+  unsigned long page_directory_index = page_fault_address >> 22;
+  unsigned long page_table_index = (page_fault_address & 0x3ff000) >> 12;
+  unsigned long PDE = page_directory[page_directory_index];
+  unsigned long * ptable;
+  
+  if ((PDE&1) != 1) {
+    //Page Fault at PageDirectory level
+     
+    //Allocate memory to new page table
+    ptable = (unsigned long*) ((kernel_mem_pool->get_frames(1) * PAGE_SIZE));
+
+    //Fill the new page table
+    for (int i = 0; i < ENTRIES_PER_PAGE; i++) {
+      ptable[i] = 0|2;
+    }
+   
+    page_directory[page_directory_index] = (unsigned long) ptable;
+    page_directory[page_directory_index] |= 3;   
+  } else {
+    //Page Table already exists
+    ptable = (unsigned long *) (PDE & 0xFFFFF000);
+
+  } 
+
+  assert((ptable[page_table_index] & 1) == 0)
+  
+  //
+  ptable[page_table_index] = (process_mem_pool->get_frames(1) * PAGE_SIZE);
+  ptable[page_table_index] |= 3; 
   Console::puts("handled page fault\n");
-}
+  }
+
 
