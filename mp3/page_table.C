@@ -23,21 +23,52 @@ void PageTable::init_paging(ContFramePool * _kernel_mem_pool,
 }
 
 PageTable::PageTable()
-{
-   assert(false);
+{  
+   //Allocate 1 frame(4kb) from kernel memory pool to Page Directory 
+   unsigned long page_directory_frame = kernel_mem_pool->get_frames(1);
+   unsigned long page_directory_memory_add = page_directory_frame * PAGE_SIZE;
+   page_directory = (unsigned long*) (page_directory_memory_add);
+
+   //Allocate 1 frame(4kb) from kernel memory pool to Page Table
+   unsigned long * page_table = (unsigned long*) (kernel_mem_pool->get_frames(1) * PAGE_SIZE);
+
+   // map the first 4MB of memory
+   unsigned long address=0;
+   unsigned int i;
+   for(i=0; i<1024; i++)
+   {  // attribute set to: supervisor level, read/write, present(011 in binary)
+      page_table[i] = address | 3; 
+      address = address + PAGE_SIZE; // PAGE_SIZE = 4096 = 4kb
+   };
+   
+   // Fill the first entry of the page directory
+   page_directory[0] = (unsigned long)page_table; 
+   page_directory[0] = page_directory[0] | 3;
+
+   // Fill the remaining 1023 entries of page directory and set the bits to indicate that their corresponding page table
+   // are not present 
+   for(i=1; i<1024; i++)
+   {  // attribute set to: supervisor level, read/write, not present(010 in binary)
+      page_directory[i] = 0 | 2; 
+   }
    Console::puts("Constructed Page Table object\n");
 }
 
-
+// Put the address of the page directory into CR3.
 void PageTable::load()
 {
-   assert(false);
+   current_page_table = this;
+   write_cr3((unsigned long)page_directory);
    Console::puts("Loaded page table\n");
 }
 
+/*
+ * The paging bit of CR0(bit 31) when set to 1 enables paging
+*/
 void PageTable::enable_paging()
 {
-   assert(false);
+   write_cr0(read_cr0() | 0x80000000);
+   paging_enabled = 1;
    Console::puts("Enabled paging\n");
 }
 
