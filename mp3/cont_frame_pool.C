@@ -1,8 +1,8 @@
 /*
  File: ContFramePool.C
  
- Author:
- Date  : 
+ Author: Anjali Chadha
+ Date  : 09/11/2018
  
  */
 
@@ -113,6 +113,15 @@
 
 /*--------------------------------------------------------------------------*/
 /* CONSTANTS */
+ContFramePool* ContFramePool::frame_pools_head;
+
+static const int HEAD_OF_SEQUENCE = 1; //01b
+static const int ALLOCATED = 2; //10b
+static const int FREE = 3; //11b
+static const int FRAMES_PER_BYTE = 4;
+static const int ALL_BITS_SET_MASK = 3; // 11 is binary rep for 3
+static const int BITS_PER_BYTE = 8;
+static const int BITS_PER_FRAME = 2;
 /*--------------------------------------------------------------------------*/
 
 /* -- (none) -- */
@@ -128,35 +137,208 @@
 /*--------------------------------------------------------------------------*/
 
 ContFramePool::ContFramePool(unsigned long _base_frame_no,
-                             unsigned long _nframes,
+                             unsigned long _n_frames,
                              unsigned long _info_frame_no,
                              unsigned long _n_info_frames)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
-    assert(false);
+    base_frame_no = _base_frame_no;
+    nframes = _n_frames;
+    nFreeFrames = _n_frames;
+    info_frame_no = _info_frame_no;
+    nInfoFrames = _n_info_frames;
+
+    if(info_frame_no == 0) {
+        bitmap = (unsigned char *) (base_frame_no * FRAME_SIZE);
+    } else {
+        bitmap = (unsigned char *) (info_frame_no * FRAME_SIZE);
+    }
+
+    // Number of frames must "fill" the bitmap!
+    assert ((nframes % 4 ) == 0);
+   
+    //Creating a singly linked list of all the contiguous frame pools.
+    //A new frame pool is always added to the front of the linked list.
+    if(ContFramePool::frame_pools_head != NULL) {
+	nextPool = ContFramePool::frame_pools_head;
+     }
+     ContFramePool::frame_pools_head = this;	
+    
+    // Everything ok. Proceed to mark all bits in the bitmap
+    for(int i=0; i*4 < _n_frames; i++) {
+        bitmap[i] = 0xFF;
+    }
+    
+    // Mark the first frame as being used if it is being used
+    if(_info_frame_no == 0) {
+        nInfoFrames = ContFramePool::needed_info_frames(_n_frames);
+	mark_inaccessible(base_frame_no, nInfoFrames);
+    } else {
+	mark_inaccessible(_info_frame_no, nInfoFrames);
+    }
+    Console::puts("Contiguous Frame Pool initialized\n");
 }
 
 unsigned long ContFramePool::get_frames(unsigned int _n_frames)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
-    assert(false);
+    // Any frames left to allocate?
+    assert(nFreeFrames >= _n_frames);
+   
+    unsigned int frame_no = base_frame_no;
+    unsigned int total_frames = nframes;
+    unsigned long first_free_frame = base_frame_no;
+    unsigned long current_frame = base_frame_no;
+
+    while(total_frames > 0) { 
+        //Get the status of current frame
+	int status = get_frame_status(current_frame);
+     
+        //If the frame is FREE, look further 
+        //for consecutive (n-1) free frames 
+        if(status == FREE) {
+
+            first_free_frame = current_frame;
+            current_frame++; 
+            total_frames--;
+            for(int i = 1; i < _n_frames; i++) {
+		total_frames--;
+            	if(get_frame_status(current_frame++) != FREE) {
+		   break;
+		}
+	    }   
+	      assert(first_free_frame >= base_frame_no);
+     	      assert(first_free_frame + _n_frames < base_frame_no + nframes);
+ 
+            return allocate_frames(first_free_frame, _n_frames);
+         } else {
+	   current_frame++;
+           total_frames--;
+         }  
+    }
+    
+    //If the program reaches till this point, that means
+    // number of contiguous frames required were unavailable
+    Console::puts("This operation cannot be fulfilled! Inadequate number of free frames available!");
+    return 0;
+}
+
+unsigned long ContFramePool::allocate_frames(unsigned long head_of_sequence_frame, unsigned int no_of_frames) {
+	
+     unsigned long current_frame = head_of_sequence_frame;
+     set_frame_status(current_frame++, HEAD_OF_SEQUENCE);
+     nFreeFrames--;
+     while(no_of_frames-- > 1) {
+	 set_frame_status(current_frame++, ALLOCATED);
+         assert(get_frame_status(current_frame-1) == ALLOCATED);
+	 nFreeFrames--;     
+     } 
+   
+   return head_of_sequence_frame;
 }
 
 void ContFramePool::mark_inaccessible(unsigned long _base_frame_no,
                                       unsigned long _n_frames)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
-    assert(false);
+     allocate_frames(_base_frame_no, _n_frames);
 }
 
 void ContFramePool::release_frames(unsigned long _first_frame_no)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
-    assert(false);
+    //look for frame pool where "frame_no" resides
+    ContFramePool* pool = find_owner_frame_pool(_first_frame_no);
+    assert(pool != NULL);
+    pool->deallocate_frames(_first_frame_no);
+}
+
+ContFramePool* ContFramePool::find_owner_frame_pool(unsigned long frame_no)
+{
+     assert(frame_pools_head != NULL);
+
+     ContFramePool* currentPool = frame_pools_head;
+
+     while(currentPool != NULL) {
+	unsigned current_pool_base_frame_no = currentPool->base_frame_no;
+	unsigned current_pool_last_frame_no = current_pool_base_frame_no + currentPool->nframes;
+	if(frame_no >= current_pool_base_frame_no && frame_no < current_pool_last_frame_no) {
+	    return currentPool;	
+	}	
+        currentPool = currentPool->nextPool;
+     }
+     //This will be an error scenario when we are not able to find any frame pool containing the given frame_no.
+     Console::puts("Error scenario! We are not able to find any frame pool containing the given frame_no. Please recheck your implementation");
+     return NULL;
+}
+
+void ContFramePool::deallocate_frames(unsigned long first_frame) 
+{
+     assert(first_frame >= base_frame_no);
+     assert(first_frame < base_frame_no + nframes);
+
+     unsigned long current_frame = first_frame;
+     
+     //Checks whether the first frame's status is head_of_sequence or not.
+     //If that's not the case, it will throw the error implying there is something wrong in the implementation.
+     assert(get_frame_status(current_frame) == HEAD_OF_SEQUENCE);
+
+     //Go through all the frames until we find a frame with status FREE
+     while(get_frame_status(current_frame) != FREE 
+	     && current_frame < (base_frame_no + nframes)) {
+	 set_frame_status(current_frame++, FREE);
+   	 nFreeFrames++;
+     } 
 }
 
 unsigned long ContFramePool::needed_info_frames(unsigned long _n_frames)
 {
-    // TODO: IMPLEMENTATION NEEEDED!
-    assert(false);
+    unsigned long infoFramesCount = _n_frames / (FRAMES_PER_BYTE * FRAME_SIZE);
+    
+    //Rounding up the number of info frames
+    if(_n_frames % (FRAMES_PER_BYTE * FRAME_SIZE) != 0) {
+	infoFramesCount += 1;
+     }
+    return infoFramesCount;
 }
+
+unsigned int ContFramePool::get_frame_status(unsigned long frame_number)
+{
+    unsigned int frame_idx = frame_number - base_frame_no; //0 based index
+    unsigned int bitmap_frame_idx = frame_idx/4;
+    unsigned int frame_bit_location = 2 * (frame_idx%4);
+    int offset = BITS_PER_BYTE - BITS_PER_FRAME - frame_bit_location;
+    return (bitmap[bitmap_frame_idx] >> offset) & ALL_BITS_SET_MASK;
+}
+
+void ContFramePool::set_frame_status(unsigned long frame_number, int status) 
+{
+    //Check if the input status is valid
+    assert(status == ALLOCATED || status == FREE || status == HEAD_OF_SEQUENCE)
+    
+    unsigned int frame_idx = frame_number - base_frame_no; //0 based index
+    unsigned int bitmap_frame_idx = frame_idx/4;
+    unsigned int frame_bit_location = 2 * (frame_idx%4);
+    int offset = BITS_PER_BYTE - BITS_PER_FRAME - frame_bit_location;
+    
+    //Clear 2 bits specific to the frame_number
+    bitmap[bitmap_frame_idx] &= ~(ALL_BITS_SET_MASK << offset);
+    
+    //Set the specifix bits to the input status
+    bitmap[bitmap_frame_idx] |= (status << offset);
+}
+
+ContFramePool::~ContFramePool()
+{
+    assert(frame_pools_head != NULL);
+
+    //Find this object in pool_list and remove from it
+     ContFramePool* currentPool = frame_pools_head;
+
+     while(currentPool != NULL && currentPool->nextPool != NULL) {
+       if(currentPool->nextPool == this) {
+	   currentPool->nextPool = this->nextPool;
+	   break;
+	}
+     }
+     //If it reaches this point, that implies the frame pool was not found in the list, and something is wrong with implementation
+     Console::puts("Couldn't find the current frame pool in the frame pool list. Please recheck your implementations");
+}
+
+
