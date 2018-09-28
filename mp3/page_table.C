@@ -16,7 +16,9 @@ void PageTable::init_paging(ContFramePool * _kernel_mem_pool,
                             ContFramePool * _process_mem_pool,
                             const unsigned long _shared_size)
 {
-   assert(false);
+   kernel_mem_pool = _kernel_mem_pool;
+   process_mem_pool = _process_mem_pool;
+   shared_size = _shared_size;
    Console::puts("Initialized Paging System\n");
 }
 
