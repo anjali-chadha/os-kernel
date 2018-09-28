@@ -54,6 +54,7 @@
 /*--------------------------------------------------------------------------*/
 
 void test_memory(ContFramePool * _pool, unsigned int _allocs_to_go);
+void test_memory2(ContFramePool * _pool);
 
 /*--------------------------------------------------------------------------*/
 /* MAIN ENTRY INTO THE OS */
@@ -92,10 +93,11 @@ int main() {
     Console::puts("Hello World!\n");
 
     /* -- TEST MEMORY ALLOCATOR */
-    
+  
     test_memory(&kernel_mem_pool, 32);
-
+    
     /* ---- Add code here to test the frame pool implementation. */
+    test_memory2(&process_mem_pool);
     test_memory(&process_mem_pool, 32);
     test_memory(&process_mem_pool, 64);
     test_memory(&process_mem_pool, 128);
@@ -103,6 +105,7 @@ int main() {
     //test_memory(&process_mem_pool, 1024); //The bochs emulator starts behaving weirdly
 
      test_memory(&process_mem_pool, 35);
+    
     /* -- NOW LOOP FOREVER */
     Console::puts("Testing is DONE. We will do nothing forever\n");
     Console::puts("Feel free to turn off the machine now.\n");
@@ -135,5 +138,30 @@ void test_memory(ContFramePool * _pool, unsigned int _allocs_to_go) {
         }
         ContFramePool::release_frames(frame);
     }
+}
+
+
+void test_memory2(ContFramePool * process_mem_pool) {
+    Console::puts("get_frames(129)..."); Console::puti(process_mem_pool->get_frames(129)); Console::puts("\n");
+    Console::puts("get_frames(247)..."); Console::puti(process_mem_pool->get_frames(247)); Console::puts("\n");
+    Console::puts("get_frames(373)..."); Console::puti(process_mem_pool->get_frames(373)); Console::puts("\n");
+    Console::puts("get_frames(765)..."); Console::puti(process_mem_pool->get_frames(765)); Console::puts("\n");
+    Console::puts("release_frames(1153)...");process_mem_pool->release_frames(1153); Console::puts("\n");
+    Console::puts("get_frames(242)..."); Console::puti(process_mem_pool->get_frames(242)); Console::puts("\n");
+    Console::puts("release_frames(1400)...");process_mem_pool->release_frames(1400); Console::puts("\n");
+   Console::puts("get_frames(370)..."); Console::puti(process_mem_pool->get_frames(370)); Console::puts("\n");
+    Console::puts("get_frames(3)..."); Console::puti(process_mem_pool->get_frames(3)); Console::puts("\n");
+    Console::puts("get_frames(3)..."); Console::puti(process_mem_pool->get_frames(3)); Console::puts("\n");
+    Console::puts("get_frames(10)..."); Console::puti(process_mem_pool->get_frames(10)); Console::puts("\n");
+    Console::puts("release_frames(2538)...");process_mem_pool->release_frames(2538); Console::puts("\n");
+    Console::puts("release_frames(1768)...");process_mem_pool->release_frames(1768); Console::puts("\n");
+    Console::puts("release_frames(1765)...");process_mem_pool->release_frames(1765); Console::puts("\n");
+    Console::puts("release_frames(1395)...");process_mem_pool->release_frames(1395); Console::puts("\n");
+    Console::puts("release_frames(1153)...");process_mem_pool->release_frames(1153); Console::puts("\n");
+    Console::puts("release_frames(1773)...");process_mem_pool->release_frames(1773); Console::puts("\n");
+    Console::puts("release_frames(1024)...");process_mem_pool->release_frames(1024); Console::puts("\n");
+    Console::puts("get_frames(129)..."); Console::puti(process_mem_pool->get_frames(129)); Console::puts("\n");
+   Console::puts("release_frames(1024)...");process_mem_pool->release_frames(1024); Console::puts("\n");  
+
 }
 
