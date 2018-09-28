@@ -184,34 +184,31 @@ unsigned long ContFramePool::get_frames(unsigned int _n_frames)
     assert(nFreeFrames >= _n_frames);
    
     unsigned int frame_no = base_frame_no;
-    unsigned int total_frames = nframes;
     unsigned long first_free_frame = base_frame_no;
     unsigned long current_frame = base_frame_no;
 
-    while(total_frames > 0) { 
+    while(true) { 
         //Get the status of current frame
+        //Console::puts("Out 1 "); Console::puti(current_frame);
 	int status = get_frame_status(current_frame);
      
         //If the frame is FREE, look further 
         //for consecutive (n-1) free frames 
         if(status == FREE) {
-
-            first_free_frame = current_frame;
-            current_frame++; 
-            total_frames--;
-            for(int i = 1; i < _n_frames; i++) {
-		total_frames--;
-            	if(get_frame_status(current_frame++) != FREE) {
-		   break;
+             first_free_frame = current_frame;
+             unsigned int total_frames =  _n_frames;
+             while(total_frames > 0) {
+                  if(get_frame_status(current_frame) != FREE) break; 
+		   current_frame++; 
+                   total_frames--;
 		}
-	    }   
+	     if(total_frames == 0) {
+                return allocate_frames(first_free_frame, _n_frames);   
+}
 	      assert(first_free_frame >= base_frame_no);
      	      assert(first_free_frame + _n_frames < base_frame_no + nframes);
- 
-            return allocate_frames(first_free_frame, _n_frames);
          } else {
 	   current_frame++;
-           total_frames--;
          }  
     }
     
@@ -222,7 +219,6 @@ unsigned long ContFramePool::get_frames(unsigned int _n_frames)
 }
 
 unsigned long ContFramePool::allocate_frames(unsigned long head_of_sequence_frame, unsigned int no_of_frames) {
-	
      unsigned long current_frame = head_of_sequence_frame;
      set_frame_status(current_frame++, HEAD_OF_SEQUENCE);
      nFreeFrames--;
@@ -278,9 +274,10 @@ void ContFramePool::deallocate_frames(unsigned long first_frame)
      //Checks whether the first frame's status is head_of_sequence or not.
      //If that's not the case, it will throw the error implying there is something wrong in the implementation.
      assert(get_frame_status(current_frame) == HEAD_OF_SEQUENCE);
-
+     set_frame_status(current_frame++, FREE);
+     nFreeFrames++;
      //Go through all the frames until we find a frame with status FREE
-     while(get_frame_status(current_frame) != FREE 
+     while(get_frame_status(current_frame) != HEAD_OF_SEQUENCE 
 	     && current_frame < (base_frame_no + nframes)) {
 	 set_frame_status(current_frame++, FREE);
    	 nFreeFrames++;
