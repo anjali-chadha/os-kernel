@@ -186,7 +186,12 @@ int main() {
     if(i == NACCESS) {
         Console::puts("TEST PASSED\n");
     }
-
+ 
+    Console::puts("Process Memory Pool Stats...\n");
+    process_mem_pool.print_stats();
+    Console::puts("Kernel Memory Pool Stats...\n");
+    kernel_mem_pool.print_stats();
+    
     /* -- STOP HERE */
     Console::puts("YOU CAN SAFELY TURN OFF THE MACHINE NOW.\n");
     for(;;);
@@ -194,3 +199,4 @@ int main() {
     /* -- WE DO THE FOLLOWING TO KEEP THE COMPILER HAPPY. */
     return 1;
 }
+
