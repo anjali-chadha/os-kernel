@@ -181,7 +181,10 @@ ContFramePool::ContFramePool(unsigned long _base_frame_no,
 unsigned long ContFramePool::get_frames(unsigned int _n_frames)
 {
     // Any frames left to allocate?
-    assert(nFreeFrames >= _n_frames);
+    if(nFreeFrames < _n_frames){
+        Console::puts("This operation cannot be fulfilled! Inadequate number of free frames available!");
+        for(; ;);
+    }
    
     unsigned int frame_no = base_frame_no;
     unsigned long first_free_frame = base_frame_no;
@@ -214,8 +217,6 @@ unsigned long ContFramePool::get_frames(unsigned int _n_frames)
     
     //If the program reaches till this point, that means
     // number of contiguous frames required were unavailable
-    Console::puts("This operation cannot be fulfilled! Inadequate number of free frames available!");
-    for(; ;);
     return -1;
 }
 
