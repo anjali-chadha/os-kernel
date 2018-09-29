@@ -51,6 +51,7 @@ PageTable::PageTable()
    {  // attribute set to: supervisor level, read/write, not present(010 in binary)
       page_directory[i] = 0 | 2; 
    }
+   paging_enabled = 0;
    Console::puts("Constructed Page Table object\n");
 }
 
@@ -79,6 +80,7 @@ void PageTable::handle_fault(REGS * _r)
    //to the missing page
    if((err_code & 1) == 1) {
       Console::puts("Page Fault Exception due to Protection Fault\n");
+      for(; ;); //For this program implementation, this is unexpected scenario, stop the program here
       return;
    }
 
