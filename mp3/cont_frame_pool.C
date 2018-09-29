@@ -215,7 +215,8 @@ unsigned long ContFramePool::get_frames(unsigned int _n_frames)
     //If the program reaches till this point, that means
     // number of contiguous frames required were unavailable
     Console::puts("This operation cannot be fulfilled! Inadequate number of free frames available!");
-    return 0;
+    for(; ;);
+    return -1;
 }
 
 unsigned long ContFramePool::allocate_frames(unsigned long head_of_sequence_frame, unsigned int no_of_frames) {
@@ -321,6 +322,19 @@ void ContFramePool::set_frame_status(unsigned long frame_number, int status)
     bitmap[bitmap_frame_idx] |= (status << offset);
 }
 
+void ContFramePool::print_stats() {
+    Console::puts("\n*****************\n");
+    Console::puts("Total Number of frames");
+            Console::putui(nframes);
+            Console::puts("\n");
+   Console::puts("Number of frames left:");
+            Console::putui(nFreeFrames);
+            Console::puts("\n");
+   Console::puts("Base_frame_address:");
+            Console::putui(base_frame_no * FRAME_SIZE);
+            Console::puts("\n");
+   Console::puts("****************\n");
+}
 ContFramePool::~ContFramePool()
 {
     assert(frame_pools_head != NULL);
