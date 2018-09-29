@@ -29,8 +29,8 @@ PageTable::PageTable()
    unsigned long page_directory_memory_add = page_directory_frame * PAGE_SIZE;
    page_directory = (unsigned long*) (page_directory_memory_add);
 
-   //Allocate 1 frame(4kb) from kernel memory pool to Page Table
-   unsigned long * page_table = (unsigned long*) (kernel_mem_pool->get_frames(1) * PAGE_SIZE);
+   //Allocate 1 frame(4kb) from process memory pool to Page Table
+   unsigned long * page_table = (unsigned long*) (process_mem_pool->get_frames(1) * PAGE_SIZE);
 
    // map the first 4MB of memory
    unsigned long address=0;
@@ -47,10 +47,13 @@ PageTable::PageTable()
 
    // Fill the remaining 1023 entries of page directory and set the bits to indicate that their corresponding page table
    // are not present 
-   for(i=1; i<1024; i++)
+   for(i=1; i<1023; i++)
    {  // attribute set to: supervisor level, read/write, not present(010 in binary)
       page_directory[i] = 0 | 2; 
    }
+    
+   //
+   page_directory[1023] = ((unsigned long)page_directory) | 3;
    paging_enabled = 0;
    Console::puts("Constructed Page Table object\n");
 }
