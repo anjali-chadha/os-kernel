@@ -18,6 +18,7 @@
 
 /*--------------------------------------------------------------------------*/
 /* DEFINES */
+
 /*--------------------------------------------------------------------------*/
 
 /* -- (none) -- */
@@ -42,7 +43,44 @@ class ContFramePool {
     
 private:
     /* -- DEFINE YOUR CONT FRAME POOL DATA STRUCTURE(s) HERE. */
+    unsigned char * bitmap;        // We implement the contiguous frame pool with a bitmap
+    unsigned int    nFreeFrames;   //
+    unsigned long   base_frame_no; // Where does the frame pool start in phys mem?
+    unsigned long   nframes;       // Size of the frame pool
+    unsigned long   info_frame_no; // Where do we store the management information?
+    unsigned int    nInfoFrames;
+    ContFramePool* nextPool;
+
+    static ContFramePool* frame_pools_head;
+
+    /*
+	Given a starting frame and number of frames, this method will 
+	set the status of the frame as HEAD_OF_SEQUENCE and all the subsequent
+	n-1 frames' status to ALLOCATED
+    */
+    unsigned long allocate_frames(unsigned long head_of_sequence_frame, unsigned int no_of_frames);
+
+    /*
+	Starting from first_frame, it traverses all the frames and set their status
+	as FREE until it finds a frame which is HEAD_OF_SEQUENCE.
+    */
+    void deallocate_frames(unsigned long first_frame); 
     
+    /*
+	Static method which goes through a linked list of frame_pools
+	and returns the reference to pool which contains the input frame no.
+    */
+    static ContFramePool* find_owner_frame_pool(unsigned long _first_frame_no);
+
+    /*
+	Sets the status of frame in bitmap.
+        In the current implementation, every frame uses 2 bits to store the status
+    */
+    void set_frame_status(unsigned long frame_no, int status);
+
+    //Gets the status of frame in bitmap.
+    unsigned int get_frame_status(unsigned long frame_no);
+
 public:
 
     // The frame size is the same as the page size, duh...    
@@ -57,7 +95,7 @@ public:
      frame pool.
      _base_frame_no: Number of first frame managed by this frame pool.
      _n_frames: Size, in frames, of this frame pool.
-     EXAMPLE: If _base_frame_no is 16 and _nframes is 4, this frame pool manages
+     EXAMPLE: If _base_frame_no is 16 and _n_frames is 4, this frame pool manages
      physical frames numbered 16, 17, 18 and 19.
      _info_frame_no: Number of the first frame that should be used to store the
      management information for the frame pool.
@@ -115,5 +153,9 @@ public:
      Other implementations need a different number of info frames.
      The exact number is computed in this function..
      */
+    void print_stats();
+
+   ~ContFramePool();
+    //Destructor for ContFramePool
 };
 #endif
