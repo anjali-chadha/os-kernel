@@ -26,9 +26,15 @@
 
 #include "utils.H"
 #include "cont_frame_pool.H"
+#include "page_table.H"
 
 /*--------------------------------------------------------------------------*/
 /* DATA STRUCTURES */
+ typedef struct PoolRegion {
+      unsigned long start_address;
+      unsigned long size;
+ } PoolRegion; 
+
 /*--------------------------------------------------------------------------*/
 
 /* Forward declaration of class PageTable */
@@ -41,7 +47,13 @@ class PageTable;
 
 class VMPool { /* Virtual Memory Pool */
 private:
-   /* -- DEFINE YOUR VIRTUAL MEMORY POOL DATA STRUCTURE(s) HERE. */
+  unsigned long base_address;
+  unsigned long size;
+  ContFramePool* frame_pool;
+  PageTable* page_table;
+  PoolRegion* regions;
+  static const unsigned int MAX_REGIONS = 512;
+  unsigned int regionsCount;
 
 public:
    VMPool(unsigned long  _base_address,
