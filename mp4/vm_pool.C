@@ -82,7 +82,25 @@ unsigned long VMPool::allocate(unsigned long _size) {
 }
 
 void VMPool::release(unsigned long _start_address) {
+    assert(regionsCount > 0);
+    unsigned int rgn_index = -1;
+    // Find the region with this start_address
+    for(int i = 0; i < regionsCount; i++) {
+	if(regions[i].start_address == _start_address) {
+	    rgn_index = i;
+	    break;
+	}
+    }
+    assert(rgn_index != -1);
+    unsigned int rgn_size = regions[rgn_index].size;
 
+    //Fill up the hole in array
+    for(int p = rgn_index; p < regionsCount-1; p++) { regions[p] = regions[p+1];}
+    regionsCount -= 1;
+    
+    //Free up the related pages of the region
+    for(int q = 0; q < rgn_size; q++) {page_table->free_page(_start_address + q * Machine::PAGE_SIZE);}
+    frame_pool->release_frames(_start_address);
     Console::puts("Released region of memory.\n");
 }
 
