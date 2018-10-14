@@ -21,6 +21,7 @@
 #include "utils.H"
 #include "assert.H"
 #include "simple_keyboard.H"
+#include "page_table.H"
 
 /*--------------------------------------------------------------------------*/
 /* DATA STRUCTURES */
@@ -86,7 +87,14 @@ void VMPool::release(unsigned long _start_address) {
 }
 
 bool VMPool::is_legitimate(unsigned long _address) {
- 
+    
+    for(int i = 0; i < regionsCount; i++) {
+	unsigned long rgn_addr = regions[i].start_address;
+	unsigned int rgn_size = regions[i].size * Machine::PAGE_SIZE;
+	//Range Check
+	if(_address >= rgn_addr && _address < (rgn_addr+rgn_size)) return true;
+    }
     Console::puts("Checked whether address is part of an allocated region.\n");
+    return false;
 }
 
