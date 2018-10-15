@@ -50,15 +50,17 @@ VMPool::VMPool(unsigned long  _base_address,
                ContFramePool *_frame_pool,
                PageTable     *_page_table) {
     base_address = _base_address;
+    base_address &= 0xfffff000; //Removing lowest three bits of the input address
     size = _size;
+    pagesCount = size/(PageTable::PAGE_SIZE);
     frame_pool = _frame_pool;
     page_table = _page_table;
+    regionsCount = 0;
+    region_list = (PoolRegion*)(_base_address);
     page_table->register_pool(this);
     Console::puts("Constructed VMPool object.\n");
 }
 
-
-//TODO: Perfrom roundUp operation of the input size
 unsigned long VMPool::allocate(unsigned long _size) {
 
     assert(_size > 0);
@@ -68,14 +70,14 @@ unsigned long VMPool::allocate(unsigned long _size) {
     }
     unsigned long start_address;
     if(regionsCount <= 0) {
-        start_address = base_address;	
+        start_address = base_address + (PageTable::PAGE_SIZE);	
     } else {
-	unsigned long last_start_address = regions[regionsCount-1].start_address;
-	unsigned long size = regions[regionsCount - 1].size;
-        start_address = last_start_address + size;
+	unsigned long last_start_address = region_list[regionsCount-1].start_address;
+	unsigned long size = region_list[regionsCount - 1].size;
+        start_address = (last_start_address + size) * (PageTable::PAGE_SIZE);
 }
-    regions[regionsCount].start_address = start_address;
-    regions[regionsCount].size = size;
+    region_list[regionsCount].start_address = start_address;
+    region_list[regionsCount].size = _size/(PageTable::PAGE_SIZE);
     regionsCount++;
     Console::puts("Allocated region of memory.\n");
     return start_address;
@@ -86,33 +88,37 @@ void VMPool::release(unsigned long _start_address) {
     unsigned int rgn_index = -1;
     // Find the region with this start_address
     for(int i = 0; i < regionsCount; i++) {
-	if(regions[i].start_address == _start_address) {
+	if(region_list[i].start_address == _start_address) {
 	    rgn_index = i;
 	    break;
 	}
     }
     assert(rgn_index != -1);
-    unsigned int rgn_size = regions[rgn_index].size;
+    unsigned int rgn_size = region_list[rgn_index].size;
+
+   //Free up the related pages of the region 
+   for (int j = 0; j < rgn_size; j++) {
+	page_table->free_page(_start_address);
+	_start_address = _start_address + PageTable::PAGE_SIZE;
+	page_table->load(); //This step is to re-read from CR2 directory to flush the TLB
+     }
 
     //Fill up the hole in array
-    for(int p = rgn_index; p < regionsCount-1; p++) { regions[p] = regions[p+1];}
-    regionsCount -= 1;
-    
-    //Free up the related pages of the region
-    for(int q = 0; q < rgn_size; q++) {page_table->free_page(_start_address + q * Machine::PAGE_SIZE);}
-    frame_pool->release_frames(_start_address);
+    for(int p = rgn_index; p < regionsCount-1; p++) { region_list[p] = region_list[p+1];}
+    regionsCount--;
     Console::puts("Released region of memory.\n");
 }
 
 bool VMPool::is_legitimate(unsigned long _address) {
-    
-    for(int i = 0; i < regionsCount; i++) {
-	unsigned long rgn_addr = regions[i].start_address;
-	unsigned int rgn_size = regions[i].size * Machine::PAGE_SIZE;
-	//Range Check
-	if(_address >= rgn_addr && _address < (rgn_addr+rgn_size)) return true;
-    }
+    //Range Check
+    if(_address >= base_address && _address < (base_address + pagesCount)) return true;
     Console::puts("Checked whether address is part of an allocated region.\n");
     return false;
 }
 
+void VMPool::print_vmpool_info() {
+   Console::puts("Base Address = ");
+   Console::puti((int)base_address);
+   Console::puts("\n");
+   Console::puts("Size=");Console::puti((int)size);Console::puts("\n");
+}

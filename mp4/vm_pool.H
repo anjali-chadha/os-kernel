@@ -51,9 +51,10 @@ private:
   unsigned long size;
   ContFramePool* frame_pool;
   PageTable* page_table;
-  PoolRegion* regions;
-  static const unsigned int MAX_REGIONS = 512;
+  PoolRegion* region_list;
+  static const unsigned int MAX_REGIONS = 512; //1 page can contain max 512 entries
   unsigned int regionsCount;
+  unsigned int pagesCount;
 
 public:
    VMPool(unsigned long  _base_address,
@@ -83,6 +84,7 @@ public:
    /* Returns false if the address is not valid. An address is not valid
     * if it is not part of a region that is currently allocated. */
 
+   void print_vmpool_info();
  };
 
 #endif
