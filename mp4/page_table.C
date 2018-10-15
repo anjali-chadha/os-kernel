@@ -10,8 +10,6 @@ ContFramePool * PageTable::kernel_mem_pool = NULL;
 ContFramePool * PageTable::process_mem_pool = NULL;
 unsigned long PageTable::shared_size = 0;
 
-
-
 void PageTable::init_paging(ContFramePool * _kernel_mem_pool,
                             ContFramePool * _process_mem_pool,
                             const unsigned long _shared_size)
@@ -25,7 +23,7 @@ void PageTable::init_paging(ContFramePool * _kernel_mem_pool,
 PageTable::PageTable()
 {  
    //Allocate 1 frame(4kb) from kernel memory pool to Page Directory 
-   unsigned long page_directory_frame = kernel_mem_pool->get_frames(1);
+   unsigned long page_directory_frame = process_mem_pool->get_frames(1);
    unsigned long page_directory_memory_add = page_directory_frame * PAGE_SIZE;
    page_directory = (unsigned long*) (page_directory_memory_add);
 
@@ -51,8 +49,10 @@ PageTable::PageTable()
    {  // attribute set to: supervisor level, read/write, not present(010 in binary)
       page_directory[i] = 0 | 2; 
    }
-    
-   //
+
+   for(i=0; i < MAX_POOL_SIZE; i++) {pool_list[i] = NULL;}
+ 
+   //Recrusive Page Table Lookup
    page_directory[1023] = ((unsigned long)page_directory) | 3;
    paging_enabled = 0;
    Console::puts("Constructed Page Table object\n");
@@ -86,51 +86,63 @@ void PageTable::handle_fault(REGS * _r)
       for(; ;); //For this program implementation, this is unexpected scenario, stop the program here
       return;
    }
-
+  VMPool** vm_item = current_page_table->pool_list;
   unsigned long page_fault_address = read_cr2();
-  unsigned long * page_directory = current_page_table -> page_directory;
 
+  //Check whether the address is legitimate or not
+  bool isLegitimate = false;
+  for(int i = 0;i < MAX_POOL_SIZE; i++)
+     if(vm_item[i] != NULL && vm_item[i] -> is_legitimate(page_fault_address )) {
+        isLegitimate = true;
+        break;
+     }
+
+  if(!isLegitimate) {
+      Console::puts("Page Fault Address is invalid\n");
+      for(;;);
+  }
+
+  unsigned long *page_directory = (unsigned long *) 0xFFFFF000;
   unsigned long page_directory_index = page_fault_address >> 22;
-  unsigned long page_table_index = (page_fault_address & 0x3ff000) >> 12;
+  unsigned long *page_table = (unsigned long *) (0xFFC00000 | (page_directory_index << 12));
+  unsigned long table_index = ((page_fault_address >> 12) & 0x03FF);
   unsigned long PDE = page_directory[page_directory_index];
   unsigned long * ptable;
   
   if ((PDE&1) != 1) {
     //Page Fault at PageDirectory level
-     
-    //Allocate memory to new page table
-    ptable = (unsigned long*) ((kernel_mem_pool->get_frames(1) * PAGE_SIZE));
-
-    //Fill the new page table
-    for (int i = 0; i < ENTRIES_PER_PAGE; i++) {
-      ptable[i] = 0|2;
+     //Allocate memory to new page table
+    page_directory[page_directory_index] = (unsigned long) (kernel_mem_pool->get_frames(1) * PAGE_SIZE);
+    page_directory[page_directory_index] |= 3;
+    for(int i = 0; i < 1024; i++) {
+	page_table[i] = 0 | 2;
     }
-   
-    page_directory[page_directory_index] = (unsigned long) ptable;
-    page_directory[page_directory_index] |= 3;   
-  } else {
-    //Page Table already exists
-    ptable = (unsigned long *) (PDE & 0xFFFFF000);
-
   } 
-
-  assert((ptable[page_table_index] & 1) == 0)
-  
-  //
-  ptable[page_table_index] = (process_mem_pool->get_frames(1) * PAGE_SIZE);
-  ptable[page_table_index] |= 3; 
+  page_table[table_index] = (unsigned long)(process_mem_pool->get_frames(1) * PAGE_SIZE) | 3;
   Console::puts("handled page fault\n");
-  }
+ }
+
 
 void PageTable::register_pool(VMPool * _vm_pool)
 {
-    assert(false);
-    Console::puts("registered VM pool\n");
+   if (pool_size >= MAX_POOL_SIZE) {
+     Console::puts("VM Pool registration failed! PageTable capacity exceeded.\n");
+     for(;;);
+   }
+   pool_list[pool_size] = _vm_pool;
+   pool_size++;
+   Console::puts("registered VM pool\n");
 }
+
 
 void PageTable::free_page(unsigned long _page_no) {
-    assert(false);
-    Console::puts("freed page\n");
+ 
+    unsigned long PDE = _page_no >> 22;
+    unsigned long* page_table = (unsigned long*)((0xFFC00 | PDE) << 12);
+    unsigned long PTE = (_page_no >> 12) & 0x03FF; 
+    if((page_table[PTE] & 1) != 0) {
+	  ContFramePool::release_frames((page_table[PTE] & 0xFFFFF000)>>12);
+          page_table[PTE] &= (0xFFFFFFFE); //Set the entry to indicate it an invalid entry  
+         Console::puts("freed page\n");
+    }
 }
-
-

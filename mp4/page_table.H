@@ -16,6 +16,7 @@
 /*--------------------------------------------------------------------------*/
 /* DEFINES */
 /*--------------------------------------------------------------------------*/
+#define MAX_POOL_SIZE 16
 
 /* -- (none) -- */
 
@@ -30,6 +31,7 @@
 
 /*--------------------------------------------------------------------------*/
 /* FORWARDS */
+class VMPool;
 /*--------------------------------------------------------------------------*/
 
 /* -- (none) -- */
@@ -51,7 +53,8 @@ private:
     
     /* DATA FOR CURRENT PAGE TABLE */
     unsigned long        * page_directory;     /* where is page directory located? */
-    
+    VMPool* pool_list[MAX_POOL_SIZE]; 
+    unsigned int pool_size;
 public:
     static const unsigned int PAGE_SIZE        = Machine::PAGE_SIZE;
     /* in bytes */
