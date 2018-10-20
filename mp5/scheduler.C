@@ -81,5 +81,16 @@ void Scheduler::add(Thread * _thread) {
 }
 
 void Scheduler::terminate(Thread * _thread) {
-  assert(false);
+  if(ready_queue_size == 0) return;
+  ReadyQNode* curr = head;
+  ReadyQNode* pre = NULL;
+
+  while(curr->tcb != _thread) {
+     pre = curr;
+     curr = curr->next;
+     if(curr == NULL) return; //When the thread is not present in the ready queue
+  }
+  pre->next = curr->next;
+  delete(curr);
+  return;
 }
