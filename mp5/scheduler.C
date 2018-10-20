@@ -63,6 +63,7 @@ void Scheduler::yield() {
 }
 
 void Scheduler::resume(Thread * _thread) {
+  if (Machine::interrupts_enabled()) Machine::disable_interrupts();      
   ReadyQNode* nw_thrd = new ReadyQNode();
   nw_thrd->tcb = _thread;
   nw_thrd->next = NULL;
@@ -74,6 +75,7 @@ void Scheduler::resume(Thread * _thread) {
 	tail = nw_thrd;
   }
   ready_queue_size++;
+  Machine::enable_interrupts();
 }
 
 void Scheduler::add(Thread * _thread) {
