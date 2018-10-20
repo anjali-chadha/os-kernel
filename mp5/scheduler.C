@@ -53,7 +53,13 @@ Scheduler::Scheduler() {
 }
 
 void Scheduler::yield() {
+  //If there are no threads in the ready queue, return
+  if(ready_queue_size == 0) return;
   
+  ReadyQNode* nxt_thread = head;
+  head = head->next;
+  Thread::dispatch_to(nxt_thread->tcb);
+  ready_queue_size--;
 }
 
 void Scheduler::resume(Thread * _thread) {
