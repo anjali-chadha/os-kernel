@@ -46,20 +46,32 @@
 /*--------------------------------------------------------------------------*/
 
 Scheduler::Scheduler() {
-  assert(false);
+  head = NULL;
+  tail = NULL;
+  ready_queue_size = 0;
   Console::puts("Constructed Scheduler.\n");
 }
 
 void Scheduler::yield() {
-  assert(false);
+  
 }
 
 void Scheduler::resume(Thread * _thread) {
-  assert(false);
+  ReadyQNode* nw_thrd = new ReadyQNode();
+  nw_thrd->tcb = _thread;
+  nw_thrd->next = NULL;
+  if(ready_queue_size == 0) {
+	head = nw_thrd;
+	tail = nw_thrd;
+  } else {
+	tail->next = nw_thrd;
+	tail = nw_thrd;
+  }
+  ready_queue_size++;
 }
 
 void Scheduler::add(Thread * _thread) {
-  assert(false);
+  resume(_thread);
 }
 
 void Scheduler::terminate(Thread * _thread) {

@@ -54,10 +54,19 @@
 /* SCHEDULER */
 /*--------------------------------------------------------------------------*/
 
+
+struct ReadyQNode {
+  Thread* tcb;
+  ReadyQNode* next;
+};
+
 class Scheduler {
 
   /* The scheduler may need private members... */
-  
+  ReadyQNode* head;
+  ReadyQNode* tail;
+  int ready_queue_size;
+
 public:
 
    Scheduler();
