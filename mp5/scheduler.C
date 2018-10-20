@@ -94,5 +94,6 @@ void Scheduler::terminate(Thread * _thread) {
   }
   pre->next = curr->next;
   delete(curr);
+  ready_queue_size--;
   return;
 }
