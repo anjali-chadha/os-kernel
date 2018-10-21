@@ -58,6 +58,12 @@ void SimpleTimer::handle_interrupt(REGS *_r) {
     ticks++;
 
     /* Whenever a second is over, we update counter accordingly. */
+    if(ticks%(hz/20) == 0) {
+	SYSTEM_SCHEDULER->resume(Thread::CurrentThread());
+	SYSTEM_SCHEDULER->yield();
+	Console::puts("Quantum elapsed for 50 ms. Context Switch\n");
+    }
+
     if (ticks >= hz )
     {
         seconds++;
