@@ -55,7 +55,7 @@ simple_keyboard.o: simple_keyboard.C simple_keyboard.H
 simple_disk.o: simple_disk.C simple_disk.H
 	$(CPP) $(CPP_OPTIONS) -c -o simple_disk.o simple_disk.C
 
-blocking_disk.o: blocking_disk.C simple_disk.H
+blocking_disk.o: blocking_disk.C blocking_disk.H
 	$(CPP) $(CPP_OPTIONS) -c -o blocking_disk.o blocking_disk.C
 
 # ==== MEMORY =====
@@ -74,21 +74,21 @@ threads_low.o: threads_low.asm threads_low.H
 thread.o: thread.C thread.H threads_low.H
 	$(CPP) $(CPP_OPTIONS) -c -o thread.o thread.C
 
-#scheduler.o: scheduler.C scheduler.H thread.H
-#	$(CPP) $(CPP_OPTIONS) -c -o scheduler.o scheduler.C
+scheduler.o: scheduler.C scheduler.H thread.H
+	$(CPP) $(CPP_OPTIONS) -c -o scheduler.o scheduler.C
 
 # ==== KERNEL MAIN FILE =====
 
-kernel.o: kernel.C machine.H console.H gdt.H idt.H irq.H exceptions.H interrupts.H simple_timer.H frame_pool.H mem_pool.H thread.H simple_disk.H
+kernel.o: kernel.C machine.H console.H gdt.H idt.H irq.H exceptions.H interrupts.H simple_timer.H frame_pool.H mem_pool.H thread.H simple_disk.H scheduler.H
 	$(CPP) $(CPP_OPTIONS) -c -o kernel.o kernel.C
 
 kernel.bin: start.o utils.o kernel.o \
    assert.o console.o gdt.o idt.o irq.o exceptions.o \
    interrupts.o simple_timer.o simple_keyboard.o frame_pool.o mem_pool.o \
    thread.o threads_low.o simple_disk.o blocking_disk.o \
-    machine.o machine_low.o 
+    machine.o machine_low.o scheduler.o
 	ld -melf_i386 -T linker.ld -o kernel.bin start.o utils.o kernel.o \
    assert.o console.o gdt.o idt.o irq.o exceptions.o interrupts.o \
    simple_timer.o simple_keyboard.o frame_pool.o mem_pool.o \
    thread.o threads_low.o simple_disk.o blocking_disk.o \
-    machine.o machine_low.o
+    machine.o machine_low.o scheduler.o
