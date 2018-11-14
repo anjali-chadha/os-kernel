@@ -48,19 +48,17 @@
 Scheduler::Scheduler() {
   head = NULL;
   tail = NULL;
-  ready_queue_size = 0;
   Console::puts("Constructed Scheduler.\n");
 }
 
 void Scheduler::yield() {
   if (Machine::interrupts_enabled()) Machine::disable_interrupts();  
   //If there are no threads in the ready queue, return
-  if(ready_queue_size == 0) return;
+  if(head == NULL) return;
   
   ReadyQNode* nxt_thread = head;
   head = head->next;
   Thread::dispatch_to(nxt_thread->tcb);
-  ready_queue_size--;
   if (!Machine::interrupts_enabled()) Machine::enable_interrupts();
 }
 
@@ -70,14 +68,13 @@ void Scheduler::resume(Thread * _thread) {
   ReadyQNode* nw_thrd = new ReadyQNode();
   nw_thrd->tcb = _thread;
   nw_thrd->next = NULL;
-  if(ready_queue_size == 0) {
+  if(head == NULL) {
 	head = nw_thrd;
 	tail = nw_thrd;
   } else {
 	tail->next = nw_thrd;
 	tail = nw_thrd;
   }
-  ready_queue_size++;
   if (!Machine::interrupts_enabled()) Machine::enable_interrupts();
 }
 
@@ -87,7 +84,7 @@ void Scheduler::add(Thread * _thread) {
 
 void Scheduler::terminate(Thread * _thread) {
   if (Machine::interrupts_enabled()) Machine::disable_interrupts();  
-  if(ready_queue_size == 0) return;
+  if(head == NULL) return;
   ReadyQNode* curr = head;
   ReadyQNode* pre = NULL;
 
@@ -98,7 +95,6 @@ void Scheduler::terminate(Thread * _thread) {
   }
   pre->next = curr->next;
   delete(curr);
-  ready_queue_size--;
   if (!Machine::interrupts_enabled()) Machine::enable_interrupts();
   return;
 }
