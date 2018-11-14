@@ -43,6 +43,7 @@ public:
       disk controller. */
 
    /* DISK OPERATIONS */
+   virtual void wait_until_ready();
 
    virtual void read(unsigned long _block_no, unsigned char * _buf);
    /* Reads 512 Bytes from the given block of the disk and copies them 
