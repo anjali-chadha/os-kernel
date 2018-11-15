@@ -43,11 +43,11 @@ void BlockingDisk::read(unsigned long _block_no, unsigned char * _buf) {
 
     issue_operation(READ, _block_no);
     Thread* curr_thrd = Thread::CurrentThread();
+    addToBlockedThreadsQueue(curr_thrd);
     while (!is_ready()) {
-        addToBlockedThreadsQueue(curr_thrd);
+        SYSTEM_SCHEDULER->resume(curr_thrd);
         SYSTEM_SCHEDULER->yield();
     }
-
     removeReadyThreadFromBlockedQueue(curr_thrd);
     /* read data from port */
     int i;
@@ -62,11 +62,11 @@ void BlockingDisk::read(unsigned long _block_no, unsigned char * _buf) {
 void BlockingDisk::write(unsigned long _block_no, unsigned char * _buf) {
     issue_operation(READ, _block_no);
     Thread* curr_thrd = Thread::CurrentThread();
+    addToBlockedThreadsQueue(curr_thrd);
     while (!is_ready()) {
-        addToBlockedThreadsQueue(curr_thrd);
+        SYSTEM_SCHEDULER->resume(curr_thrd);
         SYSTEM_SCHEDULER->yield();
     }
-
     removeReadyThreadFromBlockedQueue(curr_thrd);
     /* write data to port */
     int i;
