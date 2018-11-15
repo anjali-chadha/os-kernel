@@ -45,6 +45,7 @@ private:
     void addToBlockedThreadsQueue(Thread* thread);
     void removeReadyThreadFromBlockedQueue(Thread* thread);
 public:
+   virtual void wait_until_ready();
    BlockingDisk(DISK_ID _disk_id, unsigned int _size); 
    /* Creates a BlockingDisk device with the given size connected to the 
       MASTER or SLAVE slot of the primary ATA controller.
