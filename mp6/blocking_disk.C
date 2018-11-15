@@ -28,6 +28,7 @@
 
 extern Scheduler* SYSTEM_SCHEDULER;
 MirroredDisk* SECONDARY_DISK;
+Lock* disk_lock;
 /*--------------------------------------------------------------------------*/
 /* CONSTRUCTOR */
 /*--------------------------------------------------------------------------*/
@@ -35,12 +36,12 @@ MirroredDisk* SECONDARY_DISK;
 BlockingDisk::BlockingDisk(DISK_ID _disk_id, unsigned int _size)
         : SimpleDisk(_disk_id, _size) {
   SECONDARY_DISK = new MirroredDisk(SLAVE, _size);
+  disk_lock = new Lock();
 }
 
 /*--------------------------------------------------------------------------*/
 /* SIMPLE_DISK FUNCTIONS */
 /*--------------------------------------------------------------------------*/
-
 
 bool BlockingDisk::read_wait_condition() {
     return !is_ready() || !SECONDARY_DISK->is_ready();
@@ -51,17 +52,24 @@ bool BlockingDisk::write_wait_condition() {
         return !is_ready() && !SECONDARY_DISK->is_ready();
 }
 
-void BlockingDisk::read(unsigned long _block_no, unsigned char * _buf) {
-    /* Reads 512 Bytes in the given block of the given disk drive and copies them
-      to the given buffer. No error check! */
-
-    SECONDARY_DISK->issue_read(_block_no);
-    issue_operation(READ, _block_no);
-
-    while(read_wait_condition()) {
+void BlockingDisk::wait_until_ready() {
+    //addToBlockedThreadsQueue(Thread::CurrentThread());
+    while(!is_ready() || SECONDARY_DISK->is_ready()) {
         SYSTEM_SCHEDULER->resume(Thread::CurrentThread());
         SYSTEM_SCHEDULER->yield();
     }
+    //removeReadyThreadFromBlockedQueue(Thread::CurrentThread());
+}
+void BlockingDisk::read(unsigned long _block_no, unsigned char * _buf) {
+    /* Reads 512 Bytes in the given block of the given disk drive and copies them
+      to the given buffer. No error check! */
+    disk_lock->lock();
+    SECONDARY_DISK->issue_read(_block_no);
+    issue_operation(READ, _block_no);
+
+   
+    wait_until_ready();
+
 
     /* read data from port */
     if(is_ready()) {
@@ -75,20 +83,18 @@ void BlockingDisk::read(unsigned long _block_no, unsigned char * _buf) {
     } else {
         SECONDARY_DISK->read_from_buffer(_buf);
     }
+    disk_lock->unlock();
 }
 
 
 void BlockingDisk::write(unsigned long _block_no, unsigned char * _buf) {
     /* Writes 512 Bytes from the buffer to the given block on the given disk drive. */
 
+    disk_lock->lock();
     SECONDARY_DISK->issue_write(_block_no);
     issue_operation(WRITE, _block_no);
 
-
-    while(write_wait_condition()) {
-        SYSTEM_SCHEDULER->resume(Thread::CurrentThread());
-        SYSTEM_SCHEDULER->yield();
-    }
+  wait_until_ready();
 
     /* write data to port */
     if(is_ready()) {
@@ -101,6 +107,7 @@ void BlockingDisk::write(unsigned long _block_no, unsigned char * _buf) {
     } else {
         SECONDARY_DISK->write_to_buffer(_buf);
     }
+    disk_lock->unlock();
 }
 
 void BlockingDisk::addToBlockedThreadsQueue(Thread* thread) {
@@ -135,5 +142,18 @@ void BlockingDisk::removeReadyThreadFromBlockedQueue(Thread* thread) {
         curr = curr->next;
     }
     return;
+}
+
+Lock::Lock(){
+   locked = false;
+}
+
+void Lock::lock(){
+   while(locked);
+   locked = true;
+}
+
+void Lock::unlock(){
+    locked = false;
 }
 
