@@ -15,14 +15,14 @@
 /* DEFINES */
 /*--------------------------------------------------------------------------*/
 
-#define BLOCKSIZE 512
+/* -- (none) -- */
 
 /*--------------------------------------------------------------------------*/
 /* INCLUDES */
 /*--------------------------------------------------------------------------*/
-#include "file_system.H"
+#include "simple_disk.H"
 /* -- (none) -- */
-
+class FileSystem;
 /*--------------------------------------------------------------------------*/
 /* DATA STRUCTURES */ 
 /*--------------------------------------------------------------------------*/
@@ -35,7 +35,8 @@
 
 class File  {
 
-    friend class FileSystem;
+
+friend class FileSystem;
 private:
     /* -- your file data structures here ... */
     unsigned int fileId;
@@ -45,6 +46,7 @@ private:
     unsigned int currBlock;
     unsigned int currPos;
 
+    
     /* -- maybe it would be good to have a reference to the file system? */
     FileSystem* fileSystem;
 
@@ -78,3 +80,4 @@ public:
 };
 
 #endif
+

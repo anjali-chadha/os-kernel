@@ -42,7 +42,7 @@ struct DiskBlock {
     int availability;
 };
 
-static unsigned char disk_buff[BLOCKSIZE];
+static unsigned char disk_buff[BLOCK_SIZE];
 
 static DiskBlock* block=(DiskBlock*)disk_buff;
 /*--------------------------------------------------------------------------*/
