@@ -42,8 +42,14 @@ class BlockingDisk : public SimpleDisk {
     BlockedQNode* tail;
 
 private:
+     /* -- FUNCTIONALITY OF THE IDE LBA28 CONTROLLER */
+
+     DISK_ID      disk_id;            /* This disk is either MASTER or SLAVE */
+
+     unsigned int disk_size;          /* In Byte */
     void addToBlockedThreadsQueue(Thread* thread);
     void removeReadyThreadFromBlockedQueue(Thread* thread);
+
 public:
    virtual void wait_until_ready();
    BlockingDisk(DISK_ID _disk_id, unsigned int _size); 

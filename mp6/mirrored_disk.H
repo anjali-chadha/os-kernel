@@ -34,11 +34,28 @@ extern Scheduler* SYSTEM_SCHEDULER;
 /* B l o c k i n g D i s k  */
 /*--------------------------------------------------------------------------*/
 
-class MirroredDisk : public BlockingDisk {
+class MirroredDisk : public SimpleDisk {
 
+private:
+     /* -- FUNCTIONALITY OF THE IDE LBA28 CONTROLLER */
+
+     DISK_ID      disk_id;            /* This disk is either MASTER or SLAVE */
+
+     unsigned int disk_size;          /* In Byte */
+  void issue_operation(DISK_OPERATION _op, unsigned long _block_no);
+    /* Send a sequence of commands to the controller to initialize the READ/WRITE
+       operation. This operation is called by read() and write(). */
+
+
+    /* -- HERE WE CAN DEFINE THE BEHAVIOR OF DERIVED DISKS */
+
+    
 
 public:
-    MirroredDisk(DISK_ID _disk_id, unsigned int _size);
+     bool is_ready();
+     /* Return true if disk is ready to transfer data from/to disk, false otherwise. */
+
+     MirroredDisk(DISK_ID _disk_id, unsigned int _size);
     /* Creates a BlockingDisk device with the given size connected to the
        MASTER or SLAVE slot of the primary ATA controller.
        NOTE: We are passing the _size argument out of laziness.

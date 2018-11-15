@@ -24,6 +24,7 @@
 #include "blocking_disk.H"
 #include "simple_disk.H"
 #include "scheduler.H"
+#include "mirrored_disk.H"
 extern Scheduler* SYSTEM_SCHEDULER;
 /*--------------------------------------------------------------------------*/
 /* CONSTRUCTOR */
@@ -101,38 +102,3 @@ void MirroredDisk::write_to_buffer(unsigned char *_buf) {
         Machine::outportw(0x170, tmpw);
     }
 }
-
-void MirroredDisk::addToBlockedThreadsQueue(Thread* thread) {
-    BlockedQNode* nw_thrd = new BlockedQNode();
-    nw_thrd->tcb = thread;
-    nw_thrd->next = NULL;
-    if(head == NULL) {
-        head = nw_thrd;
-        tail = nw_thrd;
-    } else {
-        tail->next = nw_thrd;
-        tail = nw_thrd;
-    }
-}
-
-void MirroredDisk::removeReadyThreadFromBlockedQueue(Thread* thread) {
-    if(head == NULL) return;
-    BlockedQNode* prev = NULL;
-    BlockedQNode* curr = head;
-    while(curr != NULL) {
-        //Remove this thread from the queue
-        if(curr->tcb == thread) {
-            if(prev == NULL) {
-                head = head->next;
-                return;
-            } else {
-                prev->next = curr->next;
-                return;
-            }
-        }
-        prev = curr;
-        curr = curr->next;
-    }
-    return;
-}
-

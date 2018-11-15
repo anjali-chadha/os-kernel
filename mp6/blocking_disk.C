@@ -34,6 +34,7 @@ MirroredDisk* SECONDARY_DISK;
 
 BlockingDisk::BlockingDisk(DISK_ID _disk_id, unsigned int _size)
         : SimpleDisk(_disk_id, _size) {
+  SECONDARY_DISK = new MirroredDisk(SLAVE, _size);
 }
 
 /*--------------------------------------------------------------------------*/
