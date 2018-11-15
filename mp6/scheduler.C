@@ -59,7 +59,7 @@ void Scheduler::yield() {
   ReadyQNode* nxt_thread = head;
   head = head->next;
   Thread::dispatch_to(nxt_thread->tcb);
-  if (!Machine::interrupts_enabled()) Machine::enable_interrupts();
+  //if (!Machine::interrupts_enabled()) Machine::enable_interrupts();
 }
 
 
@@ -75,7 +75,7 @@ void Scheduler::resume(Thread * _thread) {
 	tail->next = nw_thrd;
 	tail = nw_thrd;
   }
-  if (!Machine::interrupts_enabled()) Machine::enable_interrupts();
+  //if (!Machine::interrupts_enabled()) Machine::enable_interrupts();
 }
 
 void Scheduler::add(Thread * _thread) {
@@ -95,6 +95,6 @@ void Scheduler::terminate(Thread * _thread) {
   }
   pre->next = curr->next;
   delete(curr);
-  if (!Machine::interrupts_enabled()) Machine::enable_interrupts();
+ // if (!Machine::interrupts_enabled()) Machine::enable_interrupts();
   return;
 }
