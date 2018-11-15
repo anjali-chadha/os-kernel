@@ -22,18 +22,28 @@
 /*--------------------------------------------------------------------------*/
 
 #include "simple_disk.H"
+#include "thread.H"
 
 /*--------------------------------------------------------------------------*/
 /* DATA STRUCTURES */ 
 /*--------------------------------------------------------------------------*/
 
-/* -- (none) -- */
+struct BlockedQNode {
+    Thread* tcb;
+    BlockedQNode* next;
+};
 
 /*--------------------------------------------------------------------------*/
 /* B l o c k i n g D i s k  */
 /*--------------------------------------------------------------------------*/
 
 class BlockingDisk : public SimpleDisk {
+    BlockedQNode* head;
+    BlockedQNode* tail;
+
+private:
+    void addToBlockedThreadsQueue(Thread* thread);
+    void removeReadyThreadFromBlockedQueue(Thread* thread);
 public:
    BlockingDisk(DISK_ID _disk_id, unsigned int _size); 
    /* Creates a BlockingDisk device with the given size connected to the 
@@ -43,7 +53,6 @@ public:
       disk controller. */
 
    /* DISK OPERATIONS */
-   virtual void wait_until_ready();
 
    virtual void read(unsigned long _block_no, unsigned char * _buf);
    /* Reads 512 Bytes from the given block of the disk and copies them 
