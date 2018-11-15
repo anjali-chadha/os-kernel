@@ -42,14 +42,15 @@ BlockingDisk::BlockingDisk(DISK_ID _disk_id, unsigned int _size)
 /*--------------------------------------------------------------------------*/
 
 
-void BlockingDisk::wait_until_ready() {
-    //addToBlockedThreadsQueue(Thread::CurrentThread());
-    while(!is_ready() || SECONDARY_DISK->is_ready()) {
-        SYSTEM_SCHEDULER->resume(Thread::CurrentThread());
-        SYSTEM_SCHEDULER->yield();
-    }
-    //removeReadyThreadFromBlockedQueue(Thread::CurrentThread());
+bool BlockingDisk::read_wait_condition() {
+    return !is_ready() || !SECONDARY_DISK->is_ready();
 }
+
+
+bool BlockingDisk::write_wait_condition() {
+        return !is_ready() && !SECONDARY_DISK->is_ready();
+}
+
 void BlockingDisk::read(unsigned long _block_no, unsigned char * _buf) {
     /* Reads 512 Bytes in the given block of the given disk drive and copies them
       to the given buffer. No error check! */
@@ -57,7 +58,10 @@ void BlockingDisk::read(unsigned long _block_no, unsigned char * _buf) {
     SECONDARY_DISK->issue_read(_block_no);
     issue_operation(READ, _block_no);
 
-    wait_until_ready();
+    while(read_wait_condition()) {
+        SYSTEM_SCHEDULER->resume(Thread::CurrentThread());
+        SYSTEM_SCHEDULER->yield();
+    }
 
     /* read data from port */
     if(is_ready()) {
@@ -80,7 +84,11 @@ void BlockingDisk::write(unsigned long _block_no, unsigned char * _buf) {
     SECONDARY_DISK->issue_write(_block_no);
     issue_operation(WRITE, _block_no);
 
-    wait_until_ready();
+
+    while(write_wait_condition()) {
+        SYSTEM_SCHEDULER->resume(Thread::CurrentThread());
+        SYSTEM_SCHEDULER->yield();
+    }
 
     /* write data to port */
     if(is_ready()) {
