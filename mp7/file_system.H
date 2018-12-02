@@ -30,9 +30,21 @@
 /*--------------------------------------------------------------------------*/
 /* DATA STRUCTURES */ 
 /*--------------------------------------------------------------------------*/
+#define BLOCK_SIZE 512
 
 /* -- (none) -- */
+extern FileSystem* FILE_SYSTEM;
 
+struct DiskBlock {
+    int id;
+    int size;
+    int data[];
+    int availability;
+};
+
+static unsigned char disk_buff[BLOCKSIZE];
+
+static DiskBlock* block=(DiskBlock*)disk_buff;
 /*--------------------------------------------------------------------------*/
 /* FORWARD DECLARATIONS */ 
 /*--------------------------------------------------------------------------*/
@@ -52,6 +64,8 @@ private:
      
      SimpleDisk * disk;
      unsigned int size;
+     File* files;
+     unsigned int fileCount;
      
 public:
 
@@ -75,6 +89,9 @@ public:
     
     bool DeleteFile(int _file_id);
     /* Delete file with given id in the file system; free any disk block occupied by the file. */
-   
+
+    void addFileToList(File* newFile);
+
+    int findFreeBlock();
 };
 #endif
