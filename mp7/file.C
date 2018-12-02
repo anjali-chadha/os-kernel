@@ -33,10 +33,8 @@ File::File() {
     Console::puts("In file constructor.\n");
 }
 
-File::File(unsigned int _file_id, FileSystem * _file_system) {
-    fileSystem = _file_system;
-    fileId = _file_id;
-
+File::File(FileSystem* _file_system, SimpleDisk * _disk) {
+    //TODO
     Console::puts("In file constructor.\n");
 }
 

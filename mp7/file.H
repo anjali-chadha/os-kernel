@@ -35,6 +35,7 @@
 
 class File  {
 
+    friend class FileSystem;
 private:
     /* -- your file data structures here ... */
     unsigned int fileId;
@@ -49,7 +50,8 @@ private:
 
 public:
 
-    File(unsigned int _file_id, FileSystem* _file_system);
+    File();
+    File(FileSystem* _file_system, SimpleDisk * _disk);
     /* Constructor for the file handle. Set the ’current
      position’ to be at the beginning of the file. */
     
