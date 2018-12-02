@@ -21,6 +21,7 @@
 #include "assert.H"
 #include "console.H"
 #include "file.H"
+#include "file_system.H"
 
 /*--------------------------------------------------------------------------*/
 /* CONSTRUCTOR */
@@ -72,5 +73,5 @@ void File::Rewrite() {
 
 bool File::EoF() {
     Console::puts("testing end-of-file condition\n");
-    assert(false);
+
 }

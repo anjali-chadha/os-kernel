@@ -54,7 +54,7 @@ static DiskBlock* block=(DiskBlock*)disk_buff;
 /*--------------------------------------------------------------------------*/
 /* F i l e S y s t e m  */
 /*--------------------------------------------------------------------------*/
-
+class File;
 class FileSystem {
 
 friend class File; /* -- not sure if we need this; feel free to delete */
