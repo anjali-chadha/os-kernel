@@ -29,8 +29,15 @@
 File::File() {
     /* We will need some arguments for the constructor, maybe pointer to disk
      block with file management and allocation data. */
+    blocks = NULL;
     Console::puts("In file constructor.\n");
-    assert(false);
+}
+
+File::File(unsigned int _file_id, FileSystem * _file_system) {
+    fileSystem = _file_system;
+    fileId = _file_id;
+
+    Console::puts("In file constructor.\n");
 }
 
 /*--------------------------------------------------------------------------*/
@@ -39,28 +46,30 @@ File::File() {
 
 int File::Read(unsigned int _n, char * _buf) {
     Console::puts("reading from file\n");
-    assert(false);
+
 }
 
 
 void File::Write(unsigned int _n, const char * _buf) {
     Console::puts("writing to file\n");
-    assert(false);
+
 }
 
 void File::Reset() {
     Console::puts("reset current position in file\n");
-    assert(false);
-    
+    currBlock = 0;
+    currPos = 0;
 }
 
 void File::Rewrite() {
     Console::puts("erase content of file\n");
-    assert(false);
+
 }
 
 
 bool File::EoF() {
     Console::puts("testing end-of-file condition\n");
-    assert(false);
+    if(fileSize == 0) return true;
+
+    return false;
 }

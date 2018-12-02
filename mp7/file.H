@@ -15,12 +15,12 @@
 /* DEFINES */
 /*--------------------------------------------------------------------------*/
 
-/* -- (none) -- */
+#define BLOCKSIZE 512
 
 /*--------------------------------------------------------------------------*/
 /* INCLUDES */
 /*--------------------------------------------------------------------------*/
-
+#include "file_system.H"
 /* -- (none) -- */
 
 /*--------------------------------------------------------------------------*/
@@ -34,16 +34,22 @@
 /*--------------------------------------------------------------------------*/
 
 class File  {
-    
+
 private:
     /* -- your file data structures here ... */
-    
+    unsigned int fileId;
+    unsigned int inodeBlock;
+    unsigned int fileSize; //in blocks
+    unsigned int* blocks;
+    unsigned int currBlock;
+    unsigned int currPos;
+
     /* -- maybe it would be good to have a reference to the file system? */
-    
+    FileSystem* fileSystem;
+
 public:
 
-    File(/* you may need arguments here; maybe a pointer to the disk block
-          containing file management and file allocation data */);
+    File(unsigned int _file_id, FileSystem* _file_system);
     /* Constructor for the file handle. Set the ’current
      position’ to be at the beginning of the file. */
     
