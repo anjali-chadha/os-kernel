@@ -98,6 +98,10 @@ void FileSystem::addFileToList(File* newFile) {
     }
 }
 
+void FileSystem::markAsFree(int block) {
+
+}
+
 bool FileSystem::DeleteFile(int _file_id) {
     Console::puts("deleting file\n");
 

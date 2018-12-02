@@ -93,5 +93,7 @@ public:
     void addFileToList(File* newFile);
 
     int findFreeBlock();
+
+    void markAsFree(int block);
 };
 #endif
