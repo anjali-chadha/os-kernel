@@ -28,7 +28,7 @@ class FileSystem;
 /*--------------------------------------------------------------------------*/
 
 /* -- (none) -- */
-
+extern FileSystem* FILE_SYSTEM;
 /*--------------------------------------------------------------------------*/
 /* class  F i l e   */
 /*--------------------------------------------------------------------------*/
@@ -46,7 +46,6 @@ private:
     unsigned int currBlock;
     unsigned int currPos;
 
-    
     /* -- maybe it would be good to have a reference to the file system? */
     FileSystem* fileSystem;
 

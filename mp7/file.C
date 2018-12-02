@@ -60,7 +60,13 @@ void File::Reset() {
 
 void File::Rewrite() {
     Console::puts("erase content of file\n");
-    assert(false);
+    for(int i = 0; i < fileSize; i++) {
+        FILE_SYSTEM->markAsFree(blocks[i]);
+    }
+    currBlock = 0;
+    currPos = 0;
+    blocks = NULL;
+    fileSize = 0;
 }
 
 
