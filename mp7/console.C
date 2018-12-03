@@ -24,22 +24,22 @@
 #include "machine.H"
 
 /*--------------------------------------------------------------------------*/
-/* DATA STRUCTURES */ 
+/* DATA STRUCTURES */
 /*--------------------------------------------------------------------------*/
 
-    /* -- (none) -- */
+/* -- (none) -- */
 
 /*--------------------------------------------------------------------------*/
 /* CONSTANTS */
 /*--------------------------------------------------------------------------*/
 
-    /* -- (none) -- */
+/* -- (none) -- */
 
 /*--------------------------------------------------------------------------*/
 /* FORWARDS */
 /*--------------------------------------------------------------------------*/
 
-    /* -- (none) -- */
+/* -- (none) -- */
 
 /*--------------------------------------------------------------------------*/
 /* METHODS FOR CLASS   C o n s o l e */
@@ -47,10 +47,10 @@
 
 /* -- GLOBAL VARIABLES -- */
 
- int Console::attrib;                  /* background and foreground color */
- int Console::csr_x;                   /* position of cursor              */
- int Console::csr_y;
- unsigned short * Console::textmemptr; /* text pointer */
+int Console::attrib;                  /* background and foreground color */
+int Console::csr_x;                   /* position of cursor              */
+int Console::csr_y;
+unsigned short * Console::textmemptr; /* text pointer */
 
 /* -- CONSTRUCTOR -- */
 
@@ -87,7 +87,7 @@ void Console::scroll() {
 
 
 void Console::move_cursor() {
-    
+
     /* The equation for finding the index in a linear
     *  chunk of memory can be represented by:
     *  Index = [(y * width) + x] */
@@ -115,7 +115,7 @@ void Console::cls() {
 
     /* Sets the entire screen to spaces in our current
     *  color */
-    for(int i = 0; i < 25; i++) 
+    for(int i = 0; i < 25; i++)
         memsetw (textmemptr + i * 80, blank, 80);
 
     /* Update out virtual cursor, and then move the
@@ -127,42 +127,45 @@ void Console::cls() {
 
 /* Puts a single character on the screen */
 void Console::putch(const char _c){
- 
+
 
     /* Handle a backspace, by moving the cursor back one space */
     if(_c == 0x08)
     {
         if(csr_x != 0) csr_x--;
     }
-    /* Handles a tab by incrementing the cursor's x, but only
-    *  to a point that will make it divisible by 8 */
+        /* Handles a tab by incrementing the cursor's x, but only
+        *  to a point that will make it divisible by 8 */
     else if(_c == 0x09)
     {
         csr_x = (csr_x + 8) & ~(8 - 1);
     }
-    /* Handles a 'Carriage Return', which simply brings the
-    *  cursor back to the margin */
+        /* Handles a 'Carriage Return', which simply brings the
+        *  cursor back to the margin */
     else if(_c == '\r')
     {
         csr_x = 0;
+        Machine::outportb(0xe9, '\r');
     }
-    /* We handle our newlines the way DOS and the BIOS do: we
-    *  treat it as if a 'CR' was also there, so we bring the
-    *  cursor to the margin and we increment the 'y' value */
+        /* We handle our newlines the way DOS and the BIOS do: we
+        *  treat it as if a 'CR' was also there, so we bring the
+        *  cursor to the margin and we increment the 'y' value */
     else if(_c == '\n')
     {
         csr_x = 0;
         csr_y++;
+        Machine::outportb(0xe9, '\n');
     }
-    /* Any character greater than and including a space, is a
-    *  printable character. The equation for finding the index
-    *  in a linear chunk of memory can be represented by:
-    *  Index = [(y * width) + x] */
+        /* Any character greater than and including a space, is a
+        *  printable character. The equation for finding the index
+        *  in a linear chunk of memory can be represented by:
+        *  Index = [(y * width) + x] */
     else if(_c >= ' ')
     {
         unsigned short * where = textmemptr + (csr_y * 80 + csr_x);
         *where = _c | (attrib << 8);	/* Character AND attributes: color */
         csr_x++;
+        Machine::outportb(0xe9, _c);
     }
 
     /* If the cursor has reached the edge of the screen's width, we
@@ -187,24 +190,24 @@ void Console::puts(const char * _s) {
 }
 
 void Console::puti(const int _n) {
-  char foostr[15];
+    char foostr[15];
 
-  int2str(_n, foostr);
-  puts(foostr);
+    int2str(_n, foostr);
+    puts(foostr);
 }
 
 void Console::putui(const unsigned int _n) {
-  char foostr[15];
+    char foostr[15];
 
-  uint2str(_n, foostr);
-  putch('<');
-  puts(foostr);
-  putch('>');
+    uint2str(_n, foostr);
+    putch('<');
+    puts(foostr);
+    putch('>');
 }
 
 
 /* -- COLOR CONTROL -- */
-void Console::set_TextColor(const unsigned char _forecolor, 
+void Console::set_TextColor(const unsigned char _forecolor,
                             const unsigned char _backcolor) {
     /* Top 4 bytes are the background, bottom 4 bytes
     *  are the foreground color */
