@@ -9,17 +9,11 @@
  */
 
 /*--------------------------------------------------------------------------*/
-/* DEFINES */
-/*--------------------------------------------------------------------------*/
-
-    /* -- (none) -- */
-
-/*--------------------------------------------------------------------------*/
 /* INCLUDES */
 /*--------------------------------------------------------------------------*/
 
-#include "assert.H"
 #include "console.H"
+#include "assert.H"
 #include "file_system.H"
 
 
@@ -29,107 +23,221 @@
 
 FileSystem::FileSystem() {
     Console::puts("In file system constructor.\n");
-    files = NULL;
-    size = 0;
-
+    head = new FileNode();
+    tail = head;
+    FileSystem::freeBlock = 2;
 }
+
+
+unsigned int FileSystem::freeBlock = 0;
+FileNode* FileSystem::head;
+unsigned int FileSystem::totalMemoryRemaining;
+FileNode* FileSystem::tail;
+unsigned int FileSystem::totalMemoryUsed = 0;
+unsigned int FileSystem::totalFiles = 0;
+unsigned int FileSystem::totalDirectories = 0;
+unsigned int FileSystem::size = 0;
 
 /*--------------------------------------------------------------------------*/
 /* FILE SYSTEM FUNCTIONS */
 /*--------------------------------------------------------------------------*/
 
 bool FileSystem::Mount(SimpleDisk * _disk) {
-    Console::puts("mounting file system form disk\n");
-    disk = _disk;
-
+    Console::puts("Starting to perform mount operation on the disk\n");
+    simpleDisk = _disk;
+    unsigned char* disk_buff = new unsigned char[BLOCK_SIZE];
+    (*simpleDisk).read(0, disk_buff);
+    memcpy(&size, disk_buff + POINTER_INFO_SIZE, POINTER_INFO_SIZE);
+    totalMemoryRemaining = size;
+    totalDirectories = 0;
+    memcpy(&totalFiles, disk_buff, POINTER_INFO_SIZE);
+    Console::puts("Finished mount operation successfully! \n");
+    return true;
 }
 
 bool FileSystem::Format(SimpleDisk * _disk, unsigned int _size) {
-    Console::puts("formatting disk\n");
-    FILE_SYSTEM->disk = _disk;
-    int blocksCount = _size/BLOCK_SIZE;
-    if(blocksCount * BLOCK_SIZE < _size)
-        blocksCount += 1;
+    Console::puts("Formatting Disk to new size ");
+    Console::putui(_size);
+    Console::puts("\n");
+    unsigned int temp = 0;
+    freeBlock = 2;
+    unsigned int totalBlocks = calculateBlocksRequired(_size);
 
-    //clear superblock data
+    unsigned char* buff = new unsigned char[BLOCK_SIZE];
+    totalDirectories = 0;
+    getString(buff, _disk, totalBlocks);
 
+    resetFSParams(_size, temp, buff);
+    (*_disk).write(0, buff);
+    return true;
+}
+
+void FileSystem::resetFSParams(unsigned int _size, unsigned int &temp, unsigned char *buff) {
+    memcpy(buff, &temp, POINTER_INFO_SIZE);
+    temp = _size;
+    memcpy(buff + 2 * POINTER_INFO_SIZE, &freeBlock, POINTER_INFO_SIZE);
+    totalMemoryUsed = 0;
+    memcpy(buff + POINTER_INFO_SIZE, &temp, POINTER_INFO_SIZE);
+    totalMemoryRemaining = _size;
+    memset(buff + 3 * POINTER_INFO_SIZE, 0, 500);
+    totalFiles = 0;
+    totalDirectories = 0;
+}
+
+unsigned char *FileSystem::getString(unsigned char* buff, SimpleDisk *_disk, unsigned int totalBlocks) {
+    int currBlock = 1;
+    (*_disk).write(currBlock++, buff);
+
+    int nextBlock = -1;
+    while(currBlock < (totalBlocks - 1) ) {
+        //Update the value of the next block
+        nextBlock = currBlock + 1;
+        totalMemoryUsed--;
+        totalMemoryRemaining++;
+        memcpy(buff + ACTUAL_FILE_SIZE, &nextBlock, POINTER_INFO_SIZE);
+        (*_disk).write(currBlock++, buff);
+    }
+
+    nextBlock = -1; //indicates null
+    memcpy(buff + ACTUAL_FILE_SIZE, &nextBlock, POINTER_INFO_SIZE);
+    (*_disk).write(currBlock, buff);
+}
+
+unsigned int FileSystem::calculateBlocksRequired(unsigned int _size) {
+    unsigned int totalBlocks = _size / BLOCK_SIZE;
+    if (totalBlocks * BLOCK_SIZE < _size)
+        totalBlocks += 1;
+    return totalBlocks;
 }
 
 File * FileSystem::LookupFile(int _file_id) {
-    Console::puts("looking up file\n");
-    assert(false);
+    Console::puts("Looking up for file ");
+    Console::putui(_file_id);
+    Console::puts("\n");
+
+    FileNode* curr = head->next;
+    if(NULL == curr) return NULL;
+
+    for(int i = 0; i < totalFiles; i++){
+        if(curr->fileId == _file_id) {
+            return curr->file;
+        }
+        curr = curr->next;
+    }
+    return NULL;
 }
 
 bool FileSystem::CreateFile(int _file_id) {
-    Console::puts("creating file\n");
+    Console::puts("Creating file\n");
+    Console::putui(_file_id);
 
-    // File Lookup
-    for(int i = 0; i < fileCount; i++) {
-        //File already present. Don't create new file
-        if(files[i].fileId == _file_id) return false;
-    }
+    unsigned int dataBlock;
+    unsigned int infoBlock = freeBlock;
 
-    //Create new file
-    File* newFile = (File*) new File(this, disk);
-    newFile->fileId = _file_id;
-    //newFile->Rewrite();
-    newFile->inodeBlock = findFreeBlock();
+    //First check if the file exists with same fileId
+    if(LookupFile(_file_id)) return false;
 
-    addFileToList(newFile);
+    totalFiles += 1;
+    unsigned char* diskBuff = new unsigned char[BLOCK_SIZE];
+    dataBlock = getFirstBlockForNewFile(dataBlock, diskBuff);
+
+    File* newFile = new File(_file_id, &infoBlock, &dataBlock);
+    addToFileNodeList(newFile);
+    totalDirectories = 0;
     return true;
 }
 
-int FileSystem::findFreeBlock() {
-
+unsigned int FileSystem::getFirstBlockForNewFile(unsigned int &dataBlock, unsigned char *diskBuff) const {
+    simpleDisk->read(freeBlock, diskBuff);
+    memcpy(&dataBlock, diskBuff + ACTUAL_FILE_SIZE, POINTER_INFO_SIZE);
+    totalMemoryRemaining--;
+    simpleDisk->read(dataBlock, diskBuff);
+    totalMemoryUsed++;
+    memcpy(&freeBlock, diskBuff + ACTUAL_FILE_SIZE, POINTER_INFO_SIZE);
+    return dataBlock;
 }
 
-void FileSystem::addFileToList(File* newFile) {
-    if (fileCount == 0) {
-        files = (File*) new File[1];
-        files[0] = *newFile;
-    } else {
-        File* new_files = (File*)new File[fileCount + 1];
-        for (int i = 0; i < fileCount; i++) {
-            new_files[i] = files[i];
-        }
-        new_files[fileCount] = *newFile;
-        delete[] files;
-        files = new_files;
+void FileSystem::addToFileNodeList(File* newFile) const {
+    FileNode* newNode = new FileNode();
+    newNode->fileId = newFile->fileId;
+    newNode->file = newFile;
+    newNode->isFile = true;
+    newNode->lastUpdateTime = 100; //TODO Replace that with cpp time directory
+    newNode->next = NULL;
+
+    if(totalFiles == 0) {
+        head->next = newNode;
+        tail = newNode;
+    }else{
+        tail->next = newNode;
+        tail = newNode;
     }
 }
 
-void FileSystem::markAsFree(int block) {
+bool FileSystem::DeleteFile( int _file_id) {
 
-}
+    FileNode* pre = head;
+    FileNode* curr = head->next;
 
-bool FileSystem::DeleteFile(int _file_id) {
-    Console::puts("deleting file\n");
+    if(!curr) return false;
 
-    int fileIndex = -1;
-    for(int i = 0; i < fileCount; i++) {
-        if(files[i].fileId == _file_id) {
-            fileIndex = i;
+    //File already exists
+    if(!LookupFile(_file_id)) return false;
+
+    totalFiles--;
+    int i = 0;
+    for(; i < totalFiles; i++){
+        if(curr->fileId == _file_id) {
+            freeFileMemory(curr);
             break;
         }
+        pre = pre->next;
+        curr = curr->next;
     }
-    if(fileIndex == fileCount) return false;
-
-    files[fileIndex].Rewrite();
-    //TODO set the block to free
-    if (fileCount == 1) {
-        delete[] files;
-        files = NULL;
-    } else {
-        int newFileCount = fileCount - 1;
-        File* newFiles = (File*) new File[newFileCount];
-        for (int n = 0, old = 0; n < newFileCount, old < fileCount; old++) {
-            if (old != fileIndex) {
-                newFiles[n] = files[old];
-                n++;
-            }
-        }
-        delete[] files;
-        files = newFiles;
+    totalMemoryUsed -= curr->file->countDataBlocks;
+    totalMemoryRemaining += curr->file->countDataBlocks;
+    if(NULL == curr->next){
+        pre->next = NULL;
+        tail = pre;
+    }else{
+        pre->next = curr->next;
     }
     return true;
+}
+
+void FileSystem::freeFileMemory(const FileNode *fileNode) {
+    if(!fileNode->isFile)
+        return;
+    unsigned int currBlock = 0;
+    unsigned char* buff1 = new unsigned char[BLOCK_SIZE];
+    totalMemoryUsed -= fileNode->file->countDataBlocks;
+    unsigned int info_block = fileNode->file->startBlockInfo;
+    unsigned char* buff2 = new unsigned char[BLOCK_SIZE];
+    totalMemoryRemaining += fileNode->file->countDataBlocks;
+    simpleDisk->read(info_block, buff2);
+    memcpy(&currBlock, buff2 + ACTUAL_FILE_SIZE, POINTER_INFO_SIZE);
+    memcpy(buff1 + ACTUAL_FILE_SIZE, &freeBlock, POINTER_INFO_SIZE);
+    simpleDisk->write(info_block, buff1);
+    freeBlock = info_block;
+    freeMemoryHelper(fileNode, currBlock, buff1, buff2);
+}
+
+void FileSystem::freeMemoryHelper(const FileNode *fileNode, unsigned int currBlock, unsigned char *buff1,
+                                   unsigned char *buff2) const {
+    if(!fileNode->isFile) return;
+    unsigned int nextBlock = 0;
+    int dataBlocks2Delete = fileNode->file->countDataBlocks;
+    for(int j = 0; j < dataBlocks2Delete; j++){
+        simpleDisk->read(currBlock, buff2);
+        if(fileNode->lastUpdateTime == -1) return;
+        memcpy(&nextBlock, buff2 + ACTUAL_FILE_SIZE, POINTER_INFO_SIZE);
+        totalMemoryRemaining += fileNode->file->countDataBlocks;
+        memcpy(buff1 + ACTUAL_FILE_SIZE, &freeBlock, POINTER_INFO_SIZE);
+        totalMemoryUsed -= fileNode->file->countDataBlocks;
+
+        simpleDisk->write(currBlock, buff1);
+
+        freeBlock = currBlock;
+        currBlock = nextBlock;
+    }
 }
