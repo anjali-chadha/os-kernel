@@ -128,7 +128,7 @@ void File::Write(unsigned int _n, const char * _buf) {
     memcpy(disk_buff + currPosition, _buf + pos, remainingChars);
 
     (*FILE_SYSTEM).simpleDisk->write(currBlock, disk_buff);
-    currPosition   += remainingChars;
+    currPosition += remainingChars;
     Console::puts("Write Operation finished!");
 }
 
@@ -138,16 +138,16 @@ void File::resizeFile() {
 
 void File::Reset() {
     Console::puts("reset current position in file\n");
-    currBlock = startBlockData;	//first block is used to store management information
+    currBlock = startBlockData;
     currPosition = 0;
 }
 
 void File::Rewrite() {
     Console::puts("erase content of file\n");
     unsigned int currBlock = startBlockData;
-    unsigned int nextBlock = 0;
 
     unsigned char* buff1 = new unsigned char[BLOCK_SIZE];
+    unsigned int nextBlock = 0;
     unsigned char* buff2 = new unsigned char[BLOCK_SIZE];
 
     for(int i = 0; i < countDataBlocks; i++) {
@@ -179,7 +179,7 @@ void File::resetFileSysParams(unsigned int currBlock) {
 }
 
 
-bool File::EoF() {
+inline bool File::EoF() {
     Console::puts("testing end-of-file condition\n");
     int loc = countDataBlocks * BLOCK_SIZE + currPosition;
     return loc > fileSize;
