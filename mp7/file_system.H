@@ -51,22 +51,19 @@ struct FileNode{
 /*--------------------------------------------------------------------------*/
 /* F i l e S y s t e m  */
 /*--------------------------------------------------------------------------*/
+static FileNode * head;
+static FileNode * tail;
+static int nextBlock;
+static unsigned char diskBuff[BLOCK_SIZE];
+static unsigned char diskBuff2[BLOCK_SIZE];
 
 class FileSystem {
 
     friend class File; /* -- not sure if we need this; feel free to delete */
 
 private:
-    /* -- DEFINE YOUR FILE SYSTEM DATA STRUCTURES HERE. */
-    static FileNode * head;
-    static FileNode * tail;
-    static unsigned int size;
-    static unsigned int totalFiles;
-    static unsigned int totalDirectories;
-    static unsigned int totalMemoryUsed;
-    static unsigned int totalMemoryRemaining;
     static unsigned int freeBlock;
-
+    /* -- DEFINE YOUR FILE SYSTEM DATA STRUCTURES HERE. */
 public:
     SimpleDisk * simpleDisk;
 

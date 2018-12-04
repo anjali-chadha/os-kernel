@@ -28,7 +28,7 @@
 /*--------------------------------------------------------------------------*/
 extern FileSystem* FILE_SYSTEM;
 
-File::File(int _fileId, unsigned int* _startBlock, unsigned int* _dataBlock) {
+File::File(int _fileId, unsigned int* _dataBlock) {
     Console::puts("In file constructor.\n");
 
     countDataBlocks = 1;
@@ -36,7 +36,6 @@ File::File(int _fileId, unsigned int* _startBlock, unsigned int* _dataBlock) {
     currBlock = startBlockData;
     fileSize = BLOCK_SIZE;
     fileId = _fileId;
-    startBlockInfo = *_startBlock;
     Console::puts("File object created with fileId: ");
     Console::puti(_fileId);
     Console::puts("\n");
@@ -48,13 +47,14 @@ File::File(int _fileId, unsigned int* _startBlock, unsigned int* _dataBlock) {
 
 int File::Read(unsigned int _n, char * _buf) {
     Console::puts("Starting to Read from file\n");
-    unsigned char *disk_buff = new unsigned char[BLOCK_SIZE];
+    memset(diskBuff, 0, BLOCK_SIZE);
 
     int i = 0;
-    unsigned int remainingChars = 0;
-    unsigned int remainingInCurrentBlock = 0;
+    int remainingChars = 0;
+    int remainingInCurrentBlock = 0;
 
     for (i = 0; i < _n;) {
+        remainingChars = _n - i;
         if(EoF()) {
             Console::puts("EOF reached! \n");
             Console::puts("Number of chars read = ");
@@ -62,21 +62,20 @@ int File::Read(unsigned int _n, char * _buf) {
             Console::puts("\n");
             return i;
         }
-        remainingChars = _n - i;
         remainingInCurrentBlock = ACTUAL_FILE_SIZE - currPosition;
-        FILE_SYSTEM->simpleDisk->read(currBlock, disk_buff);
+        FILE_SYSTEM->simpleDisk->read(currBlock, diskBuff);
         if (remainingChars > remainingInCurrentBlock) {
-            memcpy(_buf + i, disk_buff + currPosition, remainingInCurrentBlock);
+            memcpy(_buf + i, diskBuff + currPosition, remainingInCurrentBlock);
             i += remainingInCurrentBlock;
             //update the current block
-            memcpy(&currBlock, disk_buff + ACTUAL_FILE_SIZE, POINTER_INFO_SIZE);
+            memcpy(&currBlock, diskBuff + ACTUAL_FILE_SIZE, POINTER_INFO_SIZE);
             currPosition = 0;
         } else {
             break;
         }
     }
 
-    memcpy(_buf + i, disk_buff + currPosition, remainingChars);
+    memcpy(_buf + i, diskBuff + currPosition, remainingChars);
     currPosition += remainingChars;
     Console::puts("Finished Read ");
     Console::putui(_n);
@@ -96,38 +95,37 @@ void File::Write(unsigned int _n, const char * _buf) {
     Console::puts("\n");
 
     int pos = 0;
-    unsigned int remainingChars = 0;
-    unsigned int remainingInCurrentBlock = 0;
-    unsigned char* disk_buff = new unsigned char[BLOCK_SIZE];
-
+    int remainingChars = 0;
+    memset(diskBuff, 0, BLOCK_SIZE);
+    int remainingInCurrentBlock = 0;
     for(pos = 0; pos < _n;) {
+        remainingChars = _n - pos;
         if(EoF()) {
             //Perform resizing
             resizeFile();
         }
-        remainingChars = _n - pos;
         remainingInCurrentBlock = ACTUAL_FILE_SIZE - currPosition;
 
-        (*FILE_SYSTEM).simpleDisk->read(currBlock, disk_buff);
+        (*FILE_SYSTEM).simpleDisk->read(currBlock, diskBuff);
 
         if(remainingChars > remainingInCurrentBlock){
-            memcpy(disk_buff + currPosition, _buf + pos, remainingInCurrentBlock);
-            FILE_SYSTEM->simpleDisk->write(currBlock, disk_buff);
+            memcpy(diskBuff + currPosition, _buf + pos, remainingInCurrentBlock);
+            FILE_SYSTEM->simpleDisk->write(currBlock, diskBuff);
             pos += remainingInCurrentBlock;
             countDataBlocks++;
             //Allocate free block
             currBlock = FileSystem::freeBlock;
-            (*FILE_SYSTEM).simpleDisk->read(FileSystem::freeBlock, disk_buff);
-            memcpy(&(FileSystem::freeBlock), disk_buff + ACTUAL_FILE_SIZE, POINTER_INFO_SIZE);
+            (*FILE_SYSTEM).simpleDisk->read(FileSystem::freeBlock, diskBuff);
+            memcpy(&(FileSystem::freeBlock), diskBuff + ACTUAL_FILE_SIZE, POINTER_INFO_SIZE);
             currPosition = 0;
         } else {
             break;
         }
     }
 
-    memcpy(disk_buff + currPosition, _buf + pos, remainingChars);
+    memcpy(diskBuff + currPosition, _buf + pos, remainingChars);
 
-    (*FILE_SYSTEM).simpleDisk->write(currBlock, disk_buff);
+    (*FILE_SYSTEM).simpleDisk->write(currBlock, diskBuff);
     currPosition += remainingChars;
     Console::puts("Write Operation finished!");
 }
@@ -146,20 +144,20 @@ void File::Rewrite() {
     Console::puts("erase content of file\n");
     unsigned int currBlock = startBlockData;
 
-    unsigned char* buff1 = new unsigned char[BLOCK_SIZE];
-    unsigned int nextBlock = 0;
-    unsigned char* buff2 = new unsigned char[BLOCK_SIZE];
+    memset(diskBuff, 0, BLOCK_SIZE);
+    nextBlock = 0;
+    memset(diskBuff2, 0, BLOCK_SIZE);
 
     for(int i = 0; i < countDataBlocks; i++) {
-        if((int)nextBlock == -1) break;
+        if(nextBlock == -1) break;
 
-        (*FILE_SYSTEM).simpleDisk->read(currBlock, buff2);
+        (*FILE_SYSTEM).simpleDisk->read(currBlock, diskBuff2);
 
-        memcpy(&nextBlock, buff2 + ACTUAL_FILE_SIZE, POINTER_INFO_SIZE);
+        memcpy(&nextBlock, diskBuff2 + ACTUAL_FILE_SIZE, POINTER_INFO_SIZE);
 
-        memcpy(buff1 + ACTUAL_FILE_SIZE, &(FileSystem::freeBlock), POINTER_INFO_SIZE);
+        memcpy(diskBuff + ACTUAL_FILE_SIZE, &(FileSystem::freeBlock), POINTER_INFO_SIZE);
 
-        (*FILE_SYSTEM).simpleDisk->write(currBlock, buff1);
+        (*FILE_SYSTEM).simpleDisk->write(currBlock, diskBuff);
 
         if(startBlockData == currBlock) {
             //we need to keep atleast one block for the file

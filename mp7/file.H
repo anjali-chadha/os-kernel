@@ -28,7 +28,6 @@
 /*--------------------------------------------------------------------------*/
 
 /* -- (none) -- */
-
 /*--------------------------------------------------------------------------*/
 /* class  F i l e   */
 /*--------------------------------------------------------------------------*/
@@ -37,19 +36,18 @@ class File  {
 
 private:
     /* -- your file data structures here ... */
-    unsigned int startBlockData;
-    unsigned int fileSize;
-
-    unsigned int currBlock;
-    unsigned int currPosition;
+    int startBlockData;
+    int fileSize;
+    int currBlock;
+    int currPosition;
     /* -- maybe it would be good to have a reference to the file system? */
 
 public:
-    unsigned int fileId;
-    unsigned int startBlockInfo;
-    unsigned int countDataBlocks;
+    int fileId;
+    int startBlockInfo;
+    int countDataBlocks;
 
-    File(int _fileId, unsigned int* _startBlock, unsigned int* _dataBlock);
+    File(int _fileId,  unsigned int* _dataBlock);
 /* you may need arguments here; maybe a pointer to the disk block
           containing file management and file allocation data */
     /* Constructor for the file handle. Set the ’current
