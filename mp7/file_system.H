@@ -70,7 +70,7 @@ private:
 public:
     SimpleDisk * simpleDisk;
 
-    void freeFileMemory(const FileNode *fileNode);
+    void freeFileMemory(FileNode *fileNode);
 
     void addToFileNodeList(File *newFile) const;
 

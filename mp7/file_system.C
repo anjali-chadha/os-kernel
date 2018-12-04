@@ -128,11 +128,11 @@ File * FileSystem::LookupFile(int _file_id) {
 }
 
 bool FileSystem::CreateFile(int _file_id) {
+    unsigned int infoBlock = freeBlock;
     Console::puts("Creating file\n");
     Console::putui(_file_id);
 
     unsigned int dataBlock;
-    unsigned int infoBlock = freeBlock;
 
     //First check if the file exists with same fileId
     if(LookupFile(_file_id)) return false;
@@ -205,7 +205,7 @@ bool FileSystem::DeleteFile( int _file_id) {
     return true;
 }
 
-void FileSystem::freeFileMemory(const FileNode *fileNode) {
+void FileSystem::freeFileMemory(FileNode *fileNode) {
     if(!fileNode->isFile)
         return;
     unsigned int currBlock = 0;
@@ -218,6 +218,7 @@ void FileSystem::freeFileMemory(const FileNode *fileNode) {
     memcpy(&currBlock, buff2 + ACTUAL_FILE_SIZE, POINTER_INFO_SIZE);
     memcpy(buff1 + ACTUAL_FILE_SIZE, &freeBlock, POINTER_INFO_SIZE);
     simpleDisk->write(info_block, buff1);
+    fileNode->lastUpdateTime = -1;
     freeBlock = info_block;
     freeMemoryHelper(fileNode, currBlock, buff1, buff2);
 }
